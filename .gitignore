@@ -1,2 +1,6 @@
 
 *.pyc
+
+Backend/.*
+Backend/__pycache__
+WebScrapingIpynbs/.*
