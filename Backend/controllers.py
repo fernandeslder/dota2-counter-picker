@@ -1,9 +1,14 @@
-from flask import jsonify
+from flask import jsonify, request
 from app import app
 import services
 
 
-@app.route('/')
+@app.route('/getHeroData', methods=['POST'])
 def index():
-    message = services.get_hello_message()
-    return jsonify({'message': message})
+    hero_list = request.json.get('hero_list', [])
+    return jsonify({'message': 'message'})
+
+
+@app.route('/')
+def index1():
+    return jsonify({'message': 'message'})
