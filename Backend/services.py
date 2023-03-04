@@ -5,10 +5,10 @@ import constants
 def reload_data():
     global dbuff_adv_data
     global dbuff_wr_data
-    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as fi:
-        dbuff_adv_data = pickle.load(fi)
-    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as fi:
-        dbuff_wr_data = pickle.load(fi)
+    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_reload:
+        dbuff_adv_data = pickle.load(file_reload)
+    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_reload:
+        dbuff_wr_data = pickle.load(file_reload)
 
 
 def cumulative_advantage(hero_list):
@@ -40,7 +40,7 @@ def final_data(hero_list):
     final_data_dict['Average Enemy WR'] = df_avg_wr.to_dict()
 
 
-with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as fo:
-    dbuff_adv_data = pickle.load(fo)
-with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as fo:
-    dbuff_wr_data = pickle.load(fo)
+with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
+    dbuff_adv_data = pickle.load(file_load)
+with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
+    dbuff_wr_data = pickle.load(file_load)
