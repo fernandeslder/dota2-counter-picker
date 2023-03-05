@@ -6,7 +6,7 @@ HEADER_USER_AGENT_VALUE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit
 HEADER_USER_AGENT = "User-Agent"
 
 # dotabuff filters
-DOTABUFF_FILTERS = '?date=patch_7.32'
+DBUFF_FILTERS = '?date=patch_7.32'
 
 # assets/data path
 DATA_PATH = '../assets/data'
