@@ -5,15 +5,19 @@ from bs4 import BeautifulSoup
 import re
 import json
 import pandas as pd
+import logging
+logger = logging.getLogger(__name__)
 
 
 def reload_data():
+    logger.info("Reloading Data")
     global dbuff_adv_data
     global dbuff_wr_data
     with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_reload:
         dbuff_adv_data = pickle.load(file_reload)
     with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_reload:
         dbuff_wr_data = pickle.load(file_reload)
+    logger.info("Reloading Data Complete")
 
 
 def cumulative_advantage(hero_list):
@@ -33,26 +37,36 @@ def average_win_rate(hero_list):
 def individual_advantage(hero_list):
     ind_adv_dict = {}
     for i in hero_list:
-        ind_adv_dict[i] = ind_adv_dict[i].to_dict()
+        ind_adv_dict[i] = dbuff_adv_data[i].to_dict()
     return ind_adv_dict
 
 
 def final_data(hero_list):
+    logger.info("Calculating Final Data")
+
     final_data_dict = individual_advantage(hero_list)
     df_sum_adv = cumulative_advantage(hero_list)
     df_avg_wr = average_win_rate(hero_list)
     final_data_dict['Cumulative Advantage'] = df_sum_adv.to_dict()
     final_data_dict['Average Enemy WR'] = df_avg_wr.to_dict()
 
+    logger.info("Calculating Final Data Complete")
+    return final_data_dict
+
 
 def sync_data():
+    logger.info("Syncing Data")
     heroes = sync_hero_names()
     sync_hero_adv_wr(heroes)
+    reload_data()
+    logger.info("Syncing Data Complete")
 
 
 def sync_hero_names():
-    headers = {constants.HEADER_USER_AGENT: constants.HEADER_USER_AGENT_VALUE}
+    logger.info("Syncing Hero Names Data")
 
+    # Syncing Hero Names and Links
+    headers = {constants.HEADER_USER_AGENT: constants.HEADER_USER_AGENT_VALUE}
     req = requests.get(constants.DBUFF_HERO_URL, headers=headers)
     soup = BeautifulSoup(req.content, "html.parser")
     hero_links = soup.find_all("a", href=re.compile(r"/heroes/.*"))
@@ -62,12 +76,18 @@ def sync_hero_names():
             heroes.append({"hero_name": link.text.strip(), "link_name": link['href'][8:]})
 
     all_hero_names_list = [hero_dict['hero_name'] for hero_dict in heroes]
+
+    # Dumping Hero Names
     with open(f'{constants.DATA_PATH}/all_hero_names_list.json', 'w') as hero_names_out:
         hero_names_out.write(json.dumps(all_hero_names_list))
+
+    logger.info("Syncing Hero Names Data Complete")
     return heroes
 
 
 def sync_hero_adv_wr(heroes):
+    logger.info("Syncing Hero Advantage and Win Rate Data")
+
     data_dict_adv = {}
     data_dict_wr = {}
     headers = {constants.HEADER_USER_AGENT: constants.HEADER_USER_AGENT_VALUE}
@@ -86,17 +106,20 @@ def sync_hero_adv_wr(heroes):
                 wr = row.find_all("td")[3]['data-value']
                 data_dict_adv.setdefault(counter_name_tag.text.strip(), {})[hero['hero_name']] = float(advantage)
                 data_dict_wr.setdefault(counter_name_tag.text.strip(), {})[hero['hero_name']] = float(wr)
+        logger.info(f"Hero Synced: {hero['hero_name']}")
 
-        df_adv = pd.DataFrame.from_dict(data_dict_adv, orient='index')
-        df_wr = pd.DataFrame.from_dict(data_dict_wr, orient='index')
-        df_adv = df_adv.fillna(0)
-        df_wr = df_wr.fillna(50)
-        with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_dump:
-            pickle.dump(df_adv, file_dump)
-        with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_dump:
-            pickle.dump(df_wr, file_dump)
+    df_adv = pd.DataFrame.from_dict(data_dict_adv, orient='index')
+    df_wr = pd.DataFrame.from_dict(data_dict_wr, orient='index')
+    df_adv = df_adv.fillna(0)
+    df_wr = df_wr.fillna(50)
+    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_dump:
+        pickle.dump(df_adv, file_dump)
+    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_dump:
+        pickle.dump(df_wr, file_dump)
+    logger.info("Syncing Hero Advantage and Win Rate Data Complete")
 
 
+# initially load data
 with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
     dbuff_adv_data = pickle.load(file_load)
 with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:

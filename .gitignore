@@ -4,3 +4,4 @@
 Backend/.*
 Backend/__pycache__
 WebScrapingIpynbs/.*
+*.log
