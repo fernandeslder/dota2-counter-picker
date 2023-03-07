@@ -19,6 +19,12 @@ def get_hero_data():
         return utils.error_response(e)
 
 
-@app.route('/')
-def index1():
-    return jsonify({'message': 'message'})
+@app.route('/syncData')
+def sync_data():
+    try:
+        logger.info("In sync_data Endpoint")
+        services.sync_data()
+        logger.info("Successfully Synced Data")
+        return utils.json_success_response("Successfully Synced Data")
+    except Exception as e:
+        return utils.error_response(e)

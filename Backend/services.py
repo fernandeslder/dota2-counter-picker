@@ -1,3 +1,4 @@
+import os
 import pickle
 import constants
 import requests
@@ -9,15 +10,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def reload_data():
-    logger.info("Reloading Data")
+def load_data():
+    logger.info("Loading Data")
     global dbuff_adv_data
     global dbuff_wr_data
-    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_reload:
-        dbuff_adv_data = pickle.load(file_reload)
-    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_reload:
-        dbuff_wr_data = pickle.load(file_reload)
-    logger.info("Reloading Data Complete")
+    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
+        dbuff_adv_data = pickle.load(file_load)
+    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
+        dbuff_wr_data = pickle.load(file_load)
+    logger.info("Loading Data Complete")
 
 
 def cumulative_advantage(hero_list):
@@ -58,7 +59,7 @@ def sync_data():
     logger.info("Syncing Data")
     heroes = sync_hero_names()
     sync_hero_adv_wr(heroes)
-    reload_data()
+    load_data()
     logger.info("Syncing Data Complete")
 
 
@@ -112,15 +113,16 @@ def sync_hero_adv_wr(heroes):
     df_wr = pd.DataFrame.from_dict(data_dict_wr, orient='index')
     df_adv = df_adv.fillna(0)
     df_wr = df_wr.fillna(50)
-    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_dump:
+    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'wb') as file_dump:
         pickle.dump(df_adv, file_dump)
-    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_dump:
+    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'wb') as file_dump:
         pickle.dump(df_wr, file_dump)
     logger.info("Syncing Hero Advantage and Win Rate Data Complete")
 
 
 # initially load data
-with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
-    dbuff_adv_data = pickle.load(file_load)
-with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
-    dbuff_wr_data = pickle.load(file_load)
+if os.path.isfile(f'{constants.DATA_PATH}/dbuff_adv_data.pkl') \
+        and os.path.isfile(f'{constants.DATA_PATH}/dbuff_wr_data.pkl'):
+    load_data()
+else:
+    sync_data()
