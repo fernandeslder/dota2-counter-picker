@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import logo from './logo.jpg';
 import './App.css';
 import SearchBar from './components/SearchBar';
+import HeroList from "./components/HeroList";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,10 +12,9 @@ function App() {
   }
   return (
     <div className="App">
-      <body className="App-body">
       <h1><img src={logo} className="App-logo" alt="logo" />&nbsp;Dota 2 Counter Picker</h1>
       <SearchBar handleSearchChange={handleSearchChange} />
-      </body>
+      <HeroList />
     </div>
   );
 }
