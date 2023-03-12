@@ -9,4 +9,7 @@ HEADER_USER_AGENT = "User-Agent"
 DBUFF_FILTERS = '?date=patch_7.32'
 
 # assets/data path
-DATA_PATH = '../assets/data'
+BACKEND_DATA_PATH = 'assets/data'
+
+# assets/data path
+FRONTEND_ASSETS_PATH = '../Frontend/dota2-counter-picker-frontend/src/assets'

@@ -7,6 +7,7 @@ import re
 import json
 import pandas as pd
 import logging
+import urllib.request as urlibrequest
 logger = logging.getLogger(__name__)
 
 
@@ -14,9 +15,9 @@ def load_data():
     logger.info("Loading Data")
     global dbuff_adv_data
     global dbuff_wr_data
-    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
+    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
         dbuff_adv_data = pickle.load(file_load)
-    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
+    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
         dbuff_wr_data = pickle.load(file_load)
     logger.info("Loading Data Complete")
 
@@ -73,13 +74,24 @@ def sync_hero_names():
     hero_links = soup.find_all("a", href=re.compile(r"/heroes/.*"))
     heroes = []
     for link in hero_links:
-        if link.find("div", class_="hero"):
-            heroes.append({"hero_name": link.text.strip(), "link_name": link['href'][8:]})
+        hero_div = link.find("div", class_="hero")
+        if hero_div:
+            hero_name = hero_div.find("div", class_="name").text.strip()
+            link_name = link['href'][8:]
+            heroes.append({"hero_name": hero_name, "link_name": link_name})
+
+            # Downloading hero background image
+            img_url = f"https://www.dotabuff.com{hero_div['style'][16:-1]}"
+            img_path = f"{constants.FRONTEND_ASSETS_PATH}/img/{hero_name}.jpg"
+            if not os.path.isfile(img_path):
+                img_req = requests.get(img_url, headers=headers)
+                with open(img_path, 'wb') as img_file:
+                    img_file.write(img_req.content)
 
     all_hero_names_list = [hero_dict['hero_name'] for hero_dict in heroes]
 
     # Dumping Hero Names
-    with open(f'{constants.DATA_PATH}/all_hero_names_list.json', 'w') as hero_names_out:
+    with open(f'{constants.FRONTEND_ASSETS_PATH}/data/all_hero_names_list.json', 'w') as hero_names_out:
         hero_names_out.write(json.dumps(all_hero_names_list))
 
     logger.info("Syncing Hero Names Data Complete")
@@ -113,16 +125,16 @@ def sync_hero_adv_wr(heroes):
     df_wr = pd.DataFrame.from_dict(data_dict_wr, orient='index')
     df_adv = df_adv.fillna(0)
     df_wr = df_wr.fillna(50)
-    with open(f'{constants.DATA_PATH}/dbuff_adv_data.pkl', 'wb') as file_dump:
+    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl', 'wb') as file_dump:
         pickle.dump(df_adv, file_dump)
-    with open(f'{constants.DATA_PATH}/dbuff_wr_data.pkl', 'wb') as file_dump:
+    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl', 'wb') as file_dump:
         pickle.dump(df_wr, file_dump)
     logger.info("Syncing Hero Advantage and Win Rate Data Complete")
 
 
 # initially load data
-if os.path.isfile(f'{constants.DATA_PATH}/dbuff_adv_data.pkl') \
-        and os.path.isfile(f'{constants.DATA_PATH}/dbuff_wr_data.pkl'):
+if os.path.isfile(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl') \
+        and os.path.isfile(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl'):
     load_data()
 else:
     sync_data()
