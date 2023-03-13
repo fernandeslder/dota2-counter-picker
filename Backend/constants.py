@@ -8,8 +8,11 @@ HEADER_USER_AGENT = "User-Agent"
 # dotabuff filters
 DBUFF_FILTERS = '?date=patch_7.32'
 
-# assets/data path
+# Backend Data
 BACKEND_DATA_PATH = 'assets/data'
 
-# assets/data path
-FRONTEND_ASSETS_PATH = '../Frontend/dota2-counter-picker-frontend/src/assets'
+# Frontend Data
+FRONTEND_DATA_PATH = '../Frontend/dota2-counter-picker-frontend/src/data'
+
+# Frontend Img
+FRONTEND_IMG_PATH = '../Frontend/dota2-counter-picker-frontend/public/assets/img'

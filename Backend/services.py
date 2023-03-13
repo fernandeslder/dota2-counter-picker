@@ -82,7 +82,7 @@ def sync_hero_names():
 
             # Downloading hero background image
             img_url = f"https://www.dotabuff.com{hero_div['style'][16:-1]}"
-            img_path = f"{constants.FRONTEND_ASSETS_PATH}/img/{hero_name}.jpg"
+            img_path = f"{constants.FRONTEND_IMG_PATH}/{hero_name}.jpg"
             if not os.path.isfile(img_path):
                 img_req = requests.get(img_url, headers=headers)
                 with open(img_path, 'wb') as img_file:
@@ -91,7 +91,7 @@ def sync_hero_names():
     all_hero_names_list = [hero_dict['hero_name'] for hero_dict in heroes]
 
     # Dumping Hero Names
-    with open(f'{constants.FRONTEND_ASSETS_PATH}/data/all_hero_names_list.json', 'w') as hero_names_out:
+    with open(f'{constants.FRONTEND_DATA_PATH}/all_hero_names_list.json', 'w') as hero_names_out:
         hero_names_out.write(json.dumps(all_hero_names_list))
 
     logger.info("Syncing Hero Names Data Complete")

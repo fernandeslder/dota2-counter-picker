@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import heroList from "../assets/data/all_hero_names_list.json";
+import heroList from "../data/all_hero_names_list.json";
 import "./HeroPicker.css";
 
 function HeroPicker() {
@@ -52,8 +52,8 @@ function HeroPicker() {
             onClick={() => handleHeroClick(hero)}
             className={`hero-item ${selectedHeroes.includes(hero) ? "selected" : ""
               }`}
-          >
-            {hero}
+          ><img src={`assets/img/${hero}.jpg`} alt={`${hero} portrait`} className="hero-image" />
+          <span>{hero}</span>
           </div>
         ))}
       </div>
