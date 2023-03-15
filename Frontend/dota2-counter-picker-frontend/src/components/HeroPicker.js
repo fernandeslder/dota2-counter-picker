@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import _ from "lodash";
 import heroList from "../data/all_hero_names_list.json";
 import "./HeroPicker.css";
 
@@ -89,9 +90,13 @@ function HeroPicker() {
 export default HeroPicker;
 
 function Dota2Data({ data }) {
+  const [sortColumn, setSortColumn] = useState("Cumulative Advantage");
+  const [sortDirection, setSortDirection] = useState("desc");
+
   if (!data || Object.keys(data).length === 0) {
     return <div>No data available</div>;
   }
+
   let columns = Object.keys(data);
 
   // Move "Cumulative Advantage" to second last position
@@ -110,22 +115,59 @@ function Dota2Data({ data }) {
     ];
   }
 
-  const rows = Object.keys(data[columns[0]]);
+  // Sort the columns and rows based on the current sort column and direction
+  const rows = Object.keys(data[columns[0]])
+    .sort((a, b) => {
+      const aValue = data[sortColumn][a];
+      const bValue = data[sortColumn][b];
+      if (aValue < bValue) {
+        return sortDirection === "asc" ? -1 : 1;
+      } else if (aValue > bValue) {
+        return sortDirection === "asc" ? 1 : -1;
+      } else {
+        return 0;
+      }
+    })
+    .map(row => ({
+      key: row,
+      values: columns.map(col => data[col][row]),
+    }));
+
+  // Handle column click to update the sort column and direction
+  const handleColumnClick = column => {
+    if (column === sortColumn) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+  };
 
   return (
     <table>
       <thead>
         <tr>
           <th></th>
-          {columns.map(col => <th key={col}>{col}</th>)}
+          {columns.map(col => (
+            <th
+              key={col}
+              onClick={() => handleColumnClick(col)}
+              style={{ cursor: "pointer" }}
+            >
+              {col}
+              {col === sortColumn && (
+                <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+              )}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
         {rows.map(row => (
-          <tr key={row}>
-            <td>{row}</td>
-            {columns.map(col => (
-              <td key={col}>{data[col][row]}</td>
+          <tr key={row.key}>
+            <td>{row.key}</td>
+            {row.values.map((value, index) => (
+              <td key={index}>{value}</td>
             ))}
           </tr>
         ))}
@@ -133,4 +175,3 @@ function Dota2Data({ data }) {
     </table>
   );
 }
-
