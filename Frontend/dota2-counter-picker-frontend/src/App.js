@@ -3,9 +3,9 @@ import HeroPicker from "./components/HeroPicker";
 
 function App() {
   return (
-    <div>
+    <body>
       <HeroPicker />
-    </div>
+    </body>
   );
 }
 

@@ -70,13 +70,25 @@ function HeroPicker() {
           value={searchTerm}
           onChange={handleSearchTermChange}
         />
+        {searchTerm && (
+          <button className="clear-search-button" onClick={() => setSearchTerm("")}>
+            x
+          </button>
+        )}
         {heroesSelected && (
           <button className="clear-button" onClick={clearSelectedHeroes}>
             Clear All Selected Heroes
           </button>
         )}
       </div>
-      <div className="hero-list" onWheel={(e) => e.currentTarget.scrollBy(e.deltaY, 0)}>
+      <div className="hero-list" 
+      onWheel={(e) => e.currentTarget.scrollBy(e.deltaY, 0)}
+      onMouseEnter={() => {
+        document.body.style.overflowY = "hidden";
+      }}
+      onMouseLeave={() => {
+        document.body.style.overflowY = "auto";
+      }}>
         {filteredHeroes.map((hero) => (
           <div
             key={hero}

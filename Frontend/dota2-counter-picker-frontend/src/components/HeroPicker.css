@@ -1,17 +1,17 @@
+.hero-list .hero-item.selected {
+  background-color: #c70000;
+  color: #FFFFFF;
+}
+
+.hero-item:hover:not(.selected) {
+  background-color: #444444;
+}
+
 .hero-item {
-  border: 1px solid gray;
+  border: 1px solid #333333;
   margin: 5px;
   padding: 10px;
   cursor: pointer;
-}
-
-.hero-item:hover {
-  background-color: lightgray;
-}
-
-.selected {
-  background-color: #5cb85c;
-  color: white;
 }
 
 .hero-list {
@@ -23,6 +23,7 @@
   max-height: 500px;
   scrollbar-width: thin;
   scrollbar-color: #999 transparent;
+  background-color: #222222;
 }
 
 .hero-list::-webkit-scrollbar {
@@ -50,6 +51,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  background-color: #111111;
+  color: #FFFFFF;
 }
 
 .hero-list .hero-item {
@@ -72,14 +75,14 @@
 .search-bar {
   display: flex;
   align-items: center;
-  justify-content: center; /* added to center-align text */
-  background-color: #000000;
+  justify-content: center;
+  background-color: #222222;
   border-radius: 5px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   padding: 10px;
-  width: 80%; /* added to span the hero list */
-  box-sizing: border-box; /* added to include padding in width */
+  width: 80%;
+  box-sizing: border-box;
 }
 
 .search-bar input {
@@ -89,6 +92,8 @@
   flex: 1;
   margin-right: 10px;
   outline: none;
+  color: #FFFFFF;
+  background-color: #333333;
 }
 
 .search-bar input::placeholder {
@@ -102,6 +107,7 @@
 :-moz-placeholder {
   text-align: center;
 }
+
 .clear-button {
   background-color: #f44336;
   border: none;
@@ -111,4 +117,23 @@
   margin-left: 10px;
   padding: 5px 10px;
   border-radius: 5px;
+}
+
+.clear-button:hover {
+  background-color: #d32f2f;
+}
+
+.clear-search-button {
+  background-color: #333333;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.clear-search-button:hover {
+  background-color: #444444;
 }

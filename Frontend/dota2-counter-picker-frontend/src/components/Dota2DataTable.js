@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+import "./Dota2DataTable.css";
 
 function Dota2DataTable({ data }) {
     const [sortColumn, setSortColumn] = useState("Cumulative Advantage");
     const [sortDirection, setSortDirection] = useState("desc");
 
     if (!data || Object.keys(data).length === 0) {
-        return <div>No data available</div>;
+        return (
+            <div>Select Enemy Heroes</div>
+        );
     }
 
     let columns = Object.keys(data);
@@ -67,6 +70,9 @@ function Dota2DataTable({ data }) {
                                 onClick={() => handleColumnClick(col)}
                                 style={{ cursor: "pointer" }}
                             >
+                                <div>
+                                    <img src={`assets/img/${col}.jpg`} alt={col} />
+                                </div>
                                 {col}
                                 {col === sortColumn && (
                                     <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
@@ -76,17 +82,38 @@ function Dota2DataTable({ data }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {rows.map(row => (
+                    {rows.filter(row => !columns.includes(row.key)).map(row => (
                         <tr key={row.key}>
-                            <td>{row.key}</td>
+                            <td>
+                                <div>
+                                    <img src={`assets/img/${row.key}.jpg`} alt={row.key} />
+                                </div>
+                                {row.key}
+                            </td>
                             {row.values.map((value, index) => (
-                                <td key={index}>{typeof value === "number" ? value.toFixed(4) : value}</td>
+                                index === columns.indexOf("Average Enemy WR") &&
+                                    typeof value === "number" ? (
+                                    <td
+                                        key={index}
+                                        className={value < 50 ? "positive" : value > 50 ? "negative" : ""}
+                                    >
+                                        {value.toFixed(4)}
+                                    </td>
+                                ) : (
+                                    <td
+                                        key={index}
+                                        className={value > 0 ? "positive" : value < 0 ? "negative" : ""}
+                                    >
+                                        {typeof value === "number" ? value.toFixed(4) : value}
+                                    </td>
+                                )
                             ))}
                         </tr>
                     ))}
                 </tbody>
             </table>
         );
+
     } catch (error) {
         if (error instanceof TypeError && error.message.includes('Cannot read properties of undefined')) {
             setSortColumn("Cumulative Advantage");

@@ -1,0 +1,41 @@
+table {
+    border-collapse: collapse;
+    margin: auto;
+    max-width: 100%;
+    background-color: #292929;
+    color: #fff;
+    table-layout: fixed;
+}
+
+th,
+td {
+    border: 1px solid #444;
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+th img,
+td img {
+    max-width: 50%;
+    max-height: 50%;
+    display: block;
+    margin: auto;
+}
+
+th {
+    background-color: #1c1c1c;
+}
+
+td.positive {
+    background-color: #137333;
+    color: #fff;
+}
+
+td.negative {
+    background-color: #be0000;
+    color: #fff;
+}
