@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# Controller to get hero winrate, advantage and average enemy winrate data on input of enemy heroes as list
 @app.route('/getHeroData', methods=['POST'])
 def get_hero_data():
     try:
@@ -19,6 +20,7 @@ def get_hero_data():
         return utils.error_response(e)
 
 
+# Controller to sync hero data from dotabuff, also adds and fetches data and image for any new hero added
 @app.route('/syncData')
 def sync_data():
     try:
