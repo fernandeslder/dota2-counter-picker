@@ -11,6 +11,7 @@ import urllib.request as urlibrequest
 logger = logging.getLogger(__name__)
 
 
+# loads pre-existing dotabuff data into global variable for access by service
 def load_data():
     logger.info("Loading Data")
     global dbuff_adv_data
@@ -22,6 +23,7 @@ def load_data():
     logger.info("Loading Data Complete")
 
 
+# calcualtes cumulative advantage vs selected enemy heroes
 def cumulative_advantage(hero_list):
     df_sum_adv = dbuff_adv_data[hero_list[0]]
     for i in hero_list[1:]:
