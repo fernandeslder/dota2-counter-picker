@@ -21,11 +21,11 @@ function Dota2DataTable({ data }) {
         ];
     }
 
-    // Move "Average Enemy WR" to last position
-    if (columns.includes("Average Enemy WR")) {
+    // Move "Average WR vs Enemies" to last position
+    if (columns.includes("Average WR vs Enemies")) {
         columns = [
-            ...columns.filter(col => col !== "Average Enemy WR"),
-            "Average Enemy WR",
+            ...columns.filter(col => col !== "Average WR vs Enemies"),
+            "Average WR vs Enemies",
         ];
     }
 
@@ -91,11 +91,11 @@ function Dota2DataTable({ data }) {
                                 {row.key}
                             </td>
                             {row.values.map((value, index) => (
-                                index === columns.indexOf("Average Enemy WR") &&
+                                index === columns.indexOf("Average WR vs Enemies") &&
                                     typeof value === "number" ? (
                                     <td
                                         key={index}
-                                        className={value < 50 ? "positive" : value > 50 ? "negative" : ""}
+                                        className={value > 50 ? "positive" : value < 50 ? "negative" : ""}
                                     >
                                         {value.toFixed(4)}
                                     </td>
