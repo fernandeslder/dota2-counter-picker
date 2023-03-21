@@ -39,6 +39,7 @@ def average_win_rate(hero_list):
     return 100 - df_avg_wr
 
 
+# creates dict for advantage of all other heroes for each individual hero in list
 def individual_advantage(hero_list):
     ind_adv_dict = {}
     for i in hero_list:
