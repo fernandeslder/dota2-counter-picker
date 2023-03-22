@@ -30,6 +30,7 @@ def cumulative_advantage(hero_list):
         df_sum_adv = df_sum_adv + dbuff_adv_data[i]
     return df_sum_adv
 
+
 # calcualtes cumulative advantage vs selected enemy heroes
 def average_win_rate(hero_list):
     df_avg_wr = dbuff_wr_data[hero_list[0]]
