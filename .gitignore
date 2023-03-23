@@ -1,7 +1,4 @@
-
 *.pyc
-
-Backend/.*
-Backend/__pycache__
-WebScrapingIpynbs/.*
+__pycache__
 *.log
+*.log.*
