@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_cors import CORS
-import services
 app = Flask(__name__, static_folder='dota2-counter-picker-frontend/build', static_url_path='')
 CORS(app)
 
