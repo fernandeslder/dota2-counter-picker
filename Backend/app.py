@@ -1,5 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
+app = Flask(__name__)
+CORS(app)
+
 from scheduler import scheduler
 from controllers import *
 import logging
@@ -9,8 +12,6 @@ logging.basicConfig(level=logging.DEBUG,
                               logging.StreamHandler()],
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-app = Flask(__name__)
-CORS(app)
 
 if __name__ == '__main__':
     scheduler.start()

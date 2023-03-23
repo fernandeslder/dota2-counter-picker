@@ -1,4 +1,5 @@
-from flask import jsonify, request
+from flask import request
+from flask_cors import cross_origin
 from app import app
 import services
 import utils
@@ -8,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Controller to get hero winrate, advantage and average enemy winrate data on input of enemy heroes as list
 @app.route('/getHeroData', methods=['POST'])
+@cross_origin()
 def get_hero_data():
     try:
         logger.info("In get_hero_data Endpoint")
