@@ -22,6 +22,8 @@ def get_hero_data():
     except Exception as e:
         return utils.error_response(e)
 
+
+# Controller to redirect to mainpage on access of base URL
 @app.route('/')
 @cross_origin()
 def serve():
