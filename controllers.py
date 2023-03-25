@@ -36,6 +36,9 @@ def get_hero_data():
 @limiter.limit("10/day")
 @cross_origin()
 def sync_data():
+    auth_token = request.headers.get('Authorization')
+    if auth_token != os.environ.get('SYNC_AUTH'):
+        return utils.json_error_response("Unauthorized", 401)
     try:
         logger.info("In sync_data Endpoint")
         services.sync_data()
@@ -43,14 +46,4 @@ def sync_data():
         return utils.json_success_response("Successfully Synced Data")
     except Exception as e:
         return utils.error_response(e)
-
-
-@limiter.request_filter
-def authenticate():
-    # Allow requests to pass through without authentication if not /syncData
-    if request.path != '/syncData':
-        return True
-    auth_token = request.headers.get('Authorization')
-    if auth_token != os.environ.get('SYNC_AUTH'):
-        return False
-    return True
+    
