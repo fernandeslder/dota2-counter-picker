@@ -3,7 +3,7 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder='dota2-counter-picker-frontend/build', static_url_path='')
 CORS(app)
 
-from scheduler import scheduler
+
 from controllers import *
 import logging
 import logging.handlers
@@ -14,5 +14,4 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 if __name__ == '__main__':
-    scheduler.start()
     app.run()

@@ -22,6 +22,17 @@ def get_hero_data():
     except Exception as e:
         return utils.error_response(e)
 
+# Controller to sync hero data from dotabuff, also adds and fetches data and image for any new hero added
+@app.route('/syncData')
+def sync_data():
+    try:
+        logger.info("In sync_data Endpoint")
+        services.sync_data()
+        logger.info("Successfully Synced Data")
+        return utils.json_success_response("Successfully Synced Data")
+    except Exception as e:
+        return utils.error_response(e)
+
 
 # Controller to redirect to mainpage on access of base URL
 @app.route('/')
