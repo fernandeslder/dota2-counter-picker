@@ -1,7 +1,13 @@
 from flask import Flask
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 app = Flask(__name__, static_folder='dota2-counter-picker-frontend/build', static_url_path='')
 CORS(app)
+limiter = Limiter(app,
+                  key_func=get_remote_address,
+                  default_limits=["2400 per day", "200 per hour"])
+limiter.init_app(app)
 
 
 from controllers import *

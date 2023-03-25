@@ -1,11 +1,19 @@
+import os
 from flask import request
 from flask.helpers import send_from_directory
 from flask_cors import cross_origin
-from app import app
+from app import app, limiter
 import services
 import utils
 import logging
 logger = logging.getLogger(__name__)
+
+
+# Controller to redirect to mainpage on access of base URL
+@app.route('/')
+@cross_origin()
+def serve():
+    return send_from_directory(app.static_folder, 'index.html')
 
 
 # Controller to get hero winrate, advantage and average enemy winrate data on input of enemy heroes as list
@@ -22,8 +30,11 @@ def get_hero_data():
     except Exception as e:
         return utils.error_response(e)
 
+
 # Controller to sync hero data from dotabuff, also adds and fetches data and image for any new hero added
 @app.route('/syncData')
+@limiter.limit("10/day")
+@cross_origin()
 def sync_data():
     try:
         logger.info("In sync_data Endpoint")
@@ -34,8 +45,12 @@ def sync_data():
         return utils.error_response(e)
 
 
-# Controller to redirect to mainpage on access of base URL
-@app.route('/')
-@cross_origin()
-def serve():
-    return send_from_directory(app.static_folder, 'index.html')
+@limiter.request_filter
+def authenticate():
+    # Allow requests to pass through without authentication if not /syncData
+    if request.path != '/syncData':
+        return True
+    auth_token = request.headers.get('Authorization')
+    if auth_token != os.environ.get('SYNC_AUTH'):
+        return False
+    return True
