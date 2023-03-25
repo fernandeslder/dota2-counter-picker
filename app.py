@@ -4,10 +4,11 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 app = Flask(__name__, static_folder='dota2-counter-picker-frontend/build', static_url_path='')
 CORS(app)
-limiter = Limiter(app,
-                  key_func=get_remote_address,
-                  default_limits=["2400 per day", "200 per hour"])
-limiter.init_app(app)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["2400 per day", "200 per hour"]
+)
 
 
 from controllers import *
