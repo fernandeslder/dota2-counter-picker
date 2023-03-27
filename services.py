@@ -36,7 +36,7 @@ def average_win_rate(hero_list):
     df_avg_wr = dbuff_wr_data[hero_list[0]]
     for i in hero_list[1:]:
         df_avg_wr = df_avg_wr + dbuff_wr_data[i]
-    df_avg_wr = df_avg_wr/ len(hero_list)
+    df_avg_wr = df_avg_wr / len(hero_list)
     return 100 - df_avg_wr
 
 
