@@ -21,6 +21,22 @@ def get_hero_data():
         return utils.json_success_response(hero_data)
     except Exception as e:
         return utils.error_response(e)
+    
+
+# Controller to sync hero data from dotabuff, also adds and fetches data and image for any new hero added
+@app.route('/syncData')
+@cross_origin()
+def sync_data():
+    auth_token = request.headers.get('Authorization')
+    if auth_token != os.environ.get('SYNC_AUTH'):
+        return utils.json_error_response("Unauthorized", 401)
+    try:
+        logger.info("In sync_data Endpoint")
+        services.sync_data()
+        logger.info("Successfully Synced Data")
+        return utils.json_success_response("Successfully Synced Data")
+    except Exception as e:
+        return utils.error_response(e)
 
 
 # Controller to redirect to mainpage on access of base URL
