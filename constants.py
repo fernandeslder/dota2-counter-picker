@@ -11,6 +11,9 @@ DBUFF_FILTERS = '?date=week'
 # Backend Data
 BACKEND_DATA_PATH = 'assets/data'
 
+# G Drive Folder ID
+FOLDER_ID = '1lIC4fKaZsZTYnD8lhg-KdyeeRiJwAJEO'
+
 # Frontend Data
 FRONTEND_DATA_PATH = 'dota2-counter-picker-frontend/src/data'
 

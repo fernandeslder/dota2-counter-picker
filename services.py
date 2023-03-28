@@ -1,4 +1,5 @@
 import os
+import io
 import pickle
 import constants
 import requests
@@ -8,6 +9,11 @@ import json
 import pandas as pd
 import logging
 import urllib.request as urlibrequest
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,10 +22,14 @@ def load_data():
     logger.info("Loading Data")
     global dbuff_adv_data
     global dbuff_wr_data
-    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
-        dbuff_adv_data = pickle.load(file_load)
-    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
-        dbuff_wr_data = pickle.load(file_load)
+    creds = Credentials.from_service_account_file('creds.json')
+    drive_service = build('drive', 'v3', credentials=creds)
+    dbuff_adv_data_id = drive_service.files().list(q=f"name = 'dbuff_adv_data.pkl' and '{constants.FOLDER_ID}' in parents",
+                                                    fields="files(id)").execute().get("files")[0]['id']
+    dbuff_wr_data_id = drive_service.files().list(q=f"name = 'dbuff_wr_data.pkl' and '{constants.FOLDER_ID}' in parents",
+                                                    fields="files(id)").execute().get("files")[0]['id']
+    dbuff_adv_data = pickle.loads(drive_service.files().get_media(fileId=dbuff_adv_data_id).execute())
+    dbuff_wr_data = pickle.loads(drive_service.files().get_media(fileId=dbuff_wr_data_id).execute())
     logger.info("Loading Data Complete")
 
 
@@ -130,16 +140,29 @@ def sync_hero_adv_wr(heroes):
     df_wr = pd.DataFrame.from_dict(data_dict_wr, orient='index')
     df_adv = df_adv.fillna(0)
     df_wr = df_wr.fillna(50)
-    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl', 'wb') as file_dump:
-        pickle.dump(df_adv, file_dump)
-    with open(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl', 'wb') as file_dump:
-        pickle.dump(df_wr, file_dump)
+
+    creds = Credentials.from_service_account_file('creds.json')
+    drive_service = build('drive', 'v3', credentials=creds)
+    adv_file_metadata = {'name': 'dbuff_adv_data.pkl', 'parents': [constants.FOLDER_ID]}
+    drive_service.files().create(body=adv_file_metadata, media_body=MediaIoBaseUpload(io.BytesIO(pickle.dumps(df_adv)), mimetype='application/octet-stream'),
+                                                fields='id').execute()
+    wr_file_metadata = {'name': 'dbuff_wr_data.pkl', 'parents': [constants.FOLDER_ID]}
+    drive_service.files().create(body=wr_file_metadata, media_body=MediaIoBaseUpload(io.BytesIO(pickle.dumps(df_wr)), mimetype='application/octet-stream'),
+                                            fields='id').execute()
     logger.info("Syncing Hero Advantage and Win Rate Data Complete")
 
 
 # initially load data
-if os.path.isfile(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl') \
-        and os.path.isfile(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl'):
+creds = Credentials.from_service_account_file('creds.json')
+drive_service = build('drive', 'v3', credentials=creds)
+logger.info("Checking if file exists in GDrive")
+adv_file = drive_service.files().list(q=f"name = 'dbuff_adv_data.pkl' and '{constants.FOLDER_ID}' in parents",
+                                        fields="files(id)").execute().get("files")
+wr_file = drive_service.files().list(q=f"name = 'dbuff_wr_data.pkl' and '{constants.FOLDER_ID}' in parents",
+                                        fields="files(id)").execute().get("files")
+if adv_file and wr_file:
+    logger.info("GDrive files found")
     load_data()
 else:
+    logger.info("GDrive files NOT found")
     sync_data()
