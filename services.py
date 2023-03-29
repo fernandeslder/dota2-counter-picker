@@ -48,6 +48,7 @@ def individual_advantage(hero_list):
     return ind_adv_dict
 
 
+# creates dict for the final data to be returned to controller 
 def final_data(hero_list):
     logger.info("Calculating Final Data")
 
