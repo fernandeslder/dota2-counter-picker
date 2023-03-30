@@ -62,6 +62,7 @@ def final_data(hero_list):
     return final_data_dict
 
 
+# function to be called to sync all data from dotabuff to file system
 def sync_data():
     logger.info("Syncing Data")
     heroes = sync_hero_names()
