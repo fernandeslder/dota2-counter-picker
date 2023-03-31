@@ -71,6 +71,7 @@ def sync_data():
     logger.info("Syncing Data Complete")
 
 
+# function to be sync hero names to file system (if new hero added to the game will be added to list)
 def sync_hero_names():
     logger.info("Syncing Hero Names Data")
 
