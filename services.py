@@ -106,6 +106,7 @@ def sync_hero_names():
     return heroes
 
 
+# function to sync the advantage and winrate data from dotabuff for all the heros fetched after sync_hero_names
 def sync_hero_adv_wr(heroes):
     logger.info("Syncing Hero Advantage and Win Rate Data")
 
