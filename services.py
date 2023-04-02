@@ -115,6 +115,7 @@ def sync_hero_adv_wr(heroes):
     headers = {constants.HEADER_USER_AGENT: constants.HEADER_USER_AGENT_VALUE}
 
     for hero in heroes:
+        # creating hero counters URL from heroes list and constants filters
         data_url = f"{constants.DBUFF_HERO_URL}/{hero['link_name']}/counters{constants.DBUFF_FILTERS}"
         req = requests.get(data_url, headers=headers)
         soup = BeautifulSoup(req.content, "html.parser")
