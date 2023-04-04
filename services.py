@@ -122,6 +122,7 @@ def sync_hero_adv_wr(heroes):
         header = soup.find("header", string="Matchups")
         table = header.find_next_sibling("article").find("table")
 
+        # findaing the required data for counter picking ([2] = advantage% [3] = winrate%)
         for row in table.find_all("tr"):
             counter_name_tag = row.find("a", class_="link-type-hero")
             if row.find("td") and counter_name_tag:
