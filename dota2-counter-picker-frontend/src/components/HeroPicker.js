@@ -14,7 +14,7 @@ function HeroPicker() {
     const fetchHeroData = async () => {
       if (selectedHeroes.length > 0) {
         try {
-          const response = await fetch("http://127.0.0.1:5000/getHeroData", {
+          const response = await fetch("https://dota2-counter-picker.onrender.com/getHeroData", {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
