@@ -14,6 +14,17 @@ def json_success_response(response_data):
     return response
 
 
+def json_error_response(message, code):
+    response_json = {
+        'status': 'failed',
+        'message': message
+    }
+
+    response = make_response(response_json, code)
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+
 def error_response(e):
     logger.error('An error occurred', exc_info=True)
     response_json = {
