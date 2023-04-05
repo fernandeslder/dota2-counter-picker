@@ -1,1 +1,1 @@
-# dota2-counter-picker
+# **Dota2 Counter Picker**
