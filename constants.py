@@ -9,7 +9,10 @@ HEADER_USER_AGENT = "User-Agent"
 DBUFF_FILTERS = '?date=week'
 
 # Backend Data
-BACKEND_DATA_PATH = 'assets/data'
+BACKEND_DATA_PATH = 'temp'
+
+# G Drive JSON_FILE
+JSON_FILE = 'creds.json'
 
 # Frontend Data
 FRONTEND_DATA_PATH = 'dota2-counter-picker-frontend/src/data'

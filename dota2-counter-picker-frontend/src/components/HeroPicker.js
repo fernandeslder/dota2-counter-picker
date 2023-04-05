@@ -22,12 +22,19 @@ function HeroPicker() {
             body: JSON.stringify({ hero_list: selectedHeroes })
           });
           const data = await response.json();
-          setHeroData(data.data);
-          setError("");
+          if (data.status == 'success') {
+            setHeroData(data.data);
+            setError("");
+          } else {
+            const message = data.message ? "Error fetching hero data:: " + data.message : "Error fetching hero data. Please try again later.";
+            setError(message);
+          }
         } catch (error) {
-          setError("Error fetching hero data. Please try again later.");
+          const message = error.response ? "Error fetching hero data:: " + error.response.data.message : "Error fetching hero data. Please try again later.";
+          setError(message);
         }
       } else {
+        setError("");
         setHeroData({});
       }
     };
@@ -81,14 +88,14 @@ function HeroPicker() {
           </button>
         )}
       </div>
-      <div className="hero-list" 
-      onWheel={(e) => e.currentTarget.scrollBy(e.deltaY, 0)}
-      onMouseEnter={() => {
-        document.body.style.overflowY = "hidden";
-      }}
-      onMouseLeave={() => {
-        document.body.style.overflowY = "auto";
-      }}>
+      <div className="hero-list"
+        onWheel={(e) => e.currentTarget.scrollBy(e.deltaY, 0)}
+        onMouseEnter={() => {
+          document.body.style.overflowY = "hidden";
+        }}
+        onMouseLeave={() => {
+          document.body.style.overflowY = "auto";
+        }}>
         {filteredHeroes.map((hero) => (
           <div
             key={hero}

@@ -1,4 +1,5 @@
 import os
+import time
 import pickle
 import constants
 import requests
@@ -7,19 +8,32 @@ import re
 import json
 import pandas as pd
 import logging
-import urllib.request as urlibrequest
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from oauth2client.service_account import ServiceAccountCredentials
+
+
 logger = logging.getLogger(__name__)
 
+
+gauth = GoogleAuth()
+scope = ['https://www.googleapis.com/auth/drive']
+gauth.credentials = ServiceAccountCredentials.from_json_keyfile_name(constants.JSON_FILE, scope)
+drive = GoogleDrive(gauth)
 
 # loads pre-existing dotabuff data into global variable for access by service
 def load_data():
     logger.info("Loading Data")
     global dbuff_adv_data
     global dbuff_wr_data
+    adv_data_gfile, wr_data_gfile = gdrive_return_files()
+    adv_data_gfile.GetContentFile(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl')
+    wr_data_gfile.GetContentFile(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl')
     with open(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl', 'rb') as file_load:
         dbuff_adv_data = pickle.load(file_load)
     with open(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl', 'rb') as file_load:
         dbuff_wr_data = pickle.load(file_load)
+
     logger.info("Loading Data Complete")
 
 
@@ -136,16 +150,52 @@ def sync_hero_adv_wr(heroes):
     df_wr = pd.DataFrame.from_dict(data_dict_wr, orient='index')
     df_adv = df_adv.fillna(0)
     df_wr = df_wr.fillna(50)
+
     with open(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl', 'wb') as file_dump:
         pickle.dump(df_adv, file_dump)
     with open(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl', 'wb') as file_dump:
         pickle.dump(df_wr, file_dump)
+
+    if gdrive_files_exist():
+        adv_data_gfile, wr_data_gfile = gdrive_return_files()
+        adv_data_gfile.SetContentFile(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl')
+        adv_data_gfile.Upload()
+        wr_data_gfile.SetContentFile(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl')
+        wr_data_gfile.Upload()
+    else:
+        adv_data_gfile = drive.CreateFile({'title': 'dbuff_adv_data.pkl'})
+        adv_data_gfile.SetContentFile(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl')
+        adv_data_gfile.Upload()
+        wr_data_gfile = drive.CreateFile({'title': 'dbuff_wr_data.pkl'})
+        wr_data_gfile.SetContentFile(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl')
+        wr_data_gfile.Upload()
+    
     logger.info("Syncing Hero Advantage and Win Rate Data Complete")
 
 
+def gdrive_files_exist():
+    # Search for the files in the root directory of Google Drive
+    file_list = drive.ListFile().GetList()
+    adv_data_gfile = next((file for file in file_list if file['title'] == 'dbuff_adv_data.pkl'), None)
+    wr_data_gfile = next((file for file in file_list if file['title'] == 'dbuff_wr_data.pkl'), None)
+
+    if adv_data_gfile is not None and wr_data_gfile is not None:
+        return True
+    else:
+        return False
+
+def gdrive_return_files():
+    # Search for the files in the root directory of Google Drive
+    file_list = drive.ListFile().GetList()
+    adv_data_gfile = next((file for file in file_list if file['title'] == 'dbuff_adv_data.pkl'), None)
+    wr_data_gfile = next((file for file in file_list if file['title'] == 'dbuff_wr_data.pkl'), None)
+
+    return adv_data_gfile, wr_data_gfile
+
 # initially load data
-if os.path.isfile(f'{constants.BACKEND_DATA_PATH}/dbuff_adv_data.pkl') \
-        and os.path.isfile(f'{constants.BACKEND_DATA_PATH}/dbuff_wr_data.pkl'):
+if gdrive_files_exist():
+    logger.info("GDrive files found")
     load_data()
 else:
+    logger.info("GDrive files NOT found")
     sync_data()
