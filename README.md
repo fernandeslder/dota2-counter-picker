@@ -5,6 +5,6 @@ The app is deployed at https://dota2-counter-picker.onrender.com/. Please note t
 
 ## **Table of Contents:**
 
-1. <a href="#About">About</a>
+1. <a href="#1-about">About</a>
 
-## <a name="About">**1. About**</a>
+## <a>**1. About**</a>
