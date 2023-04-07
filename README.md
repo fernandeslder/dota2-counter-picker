@@ -3,6 +3,10 @@ The Dota 2 Counter Picker App scrapes and displays data from dotabuff in an simp
 
 The app is deployed at https://dota2-counter-picker.onrender.com/. Please note that it may take some time to load (approximately 2 to 5 minutes) as it is hosted on a free instance that puts the app to sleep if it is unused for 15 minutes.
 
+<p align="center">
+    <img src = "demo gif/demo.gif">
+</p>
+
 ## **Table of Contents:**
 
 1. <a href="#1-about">About</a>
