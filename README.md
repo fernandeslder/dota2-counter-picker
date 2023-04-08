@@ -22,7 +22,7 @@ Users can select up to 5 enemy heroes to see how other heroes fare against them.
 
 ## <a>**2. Running the Main Branch Locally**</a>
 
-### Prerequisites
+### a. Prerequisites
 Before running the main branch of the application locally, ensure that you have the following installed:
 - Python
 - Node.js
@@ -30,26 +30,26 @@ Before running the main branch of the application locally, ensure that you have 
 
 Additionally, you will need credentials for a Google Cloud service account with the Google Drive API enabled. Save the credentials file as "creds.json" in the base directory.
 
-### Installing Python Requirements
+### b. Installing Python Requirements
 To install the Python requirements, run the following command in the root directory of the application:
 ```
 pip install -r requirements.txt
 ```
 It is recommended to create and activate a virtual environment before running the command.
 
-### Configuring the React App
+### c. Configuring the React App
 Before running the React app, you need to configure it to point to the local server. To do this, follow these steps:
 1. Navigate to `dota2-counter-picker\dota2-counter-picker-frontend\src\components\HeroPicker.js.`
 2. Change `"https://dota2-counter-picker.onrender.com/getHeroData"` to `"http://127.0.0.1:5000/getHeroData"`.
 
-### Building the React App
+### d. Building the React App
 To build the React app, navigate to the `dota2-counter-picker\dota2-counter-picker-frontend\` directory and run the following commands:
 ```
 npm install
 npm run build
 ```
 
-### Running the Application
+### e. Running the Application
 To start the local server, navigate back to the root directory and activate the virtual environment (if created). Then run the following command:
 ```
 python app.py
