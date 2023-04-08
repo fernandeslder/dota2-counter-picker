@@ -27,6 +27,7 @@ Before running the main branch of the application locally, ensure that you have 
 - Python
 - Node.js
 - NPM
+
 Additionally, you will need credentials for a Google Cloud service account with the Google Drive API enabled. Save the credentials file as "creds.json" in the base directory.
 
 ### Installing Python Requirements
