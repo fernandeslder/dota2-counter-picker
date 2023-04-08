@@ -20,7 +20,7 @@ The Dota 2 Counter Picker app utilizes web scraping to gather all the current he
 
 Users can select up to 5 enemy heroes to see how other heroes fare against them. The search bar can also be used to quickly find and select enemy heroes. For each counter hero, the app displays individual advantage, as well as "Cumulative Advantage" and "Average WR vs Enemies". Additionally, the app provides sorting functionality for each of these counter hero metrics.
 
-## <a>**2.Running the Main Branch Locally**</a>
+## <a>**2. Running the Main Branch Locally**</a>
 
 ### Prerequisites
 Before running the main branch of the application locally, ensure that you have the following installed:
