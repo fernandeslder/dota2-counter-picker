@@ -24,9 +24,9 @@ Users can select up to 5 enemy heroes to see how other heroes fare against them.
 
 ### a. Prerequisites
 Before running the main branch of the application locally, ensure that you have the following installed:
-- Python
-- Node.js
-- NPM
+- Python (3.8.8)
+- Node.js (v18.15.0)
+- NPM (9.6.1)
 
 Additionally, you will need credentials for a Google Cloud service account with the Google Drive API enabled. Save the credentials file as "creds.json" in the base directory.
 
