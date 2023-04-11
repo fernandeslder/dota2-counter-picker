@@ -55,3 +55,9 @@ To start the local server, navigate back to the root directory and activate the 
 python app.py
 ```
 You can access the application by opening a web browser and visiting `http://127.0.0.1:5000/`.
+
+### f. Deployment command
+The command used for deployment can be found in the Procfile (for heroku) and below for Render:
+```
+gunicorn -w 4 -k sync --worker-connections 1000 --timeout 1000 app:app
+```
