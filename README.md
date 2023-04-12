@@ -13,6 +13,7 @@ The app is deployed at https://dota2-counter-picker.onrender.com/. Please note t
 
 1. <a href="#1-about">About</a>
 2. <a href="#2-running-the-main-branch-locally">Running the Main Branch Locally</a>
+3. <a href="#3-technologies-used">Technologies Used</a>
 
 ## <a>**1. About**</a>
 
@@ -61,3 +62,13 @@ The command used for deployment can be found in the Procfile (for heroku) and be
 ```
 gunicorn -w 4 -k sync --worker-connections 1000 --timeout 1000 app:app
 ```
+
+## <a>**3. Technologies Used**</a>
+- **React** for the frontend
+- **Flask** for the backend
+- **BeautifulSoup** for web scraping
+- **Pandas** for data manipulation
+- **PyDrive** for Google Drive synchronization
+- **Render** to host the application
+- **Make** (formerly Integromat) scenarios to schedule sync calls (as cron-job.org has 30 seconds max timeout)
+- **Papertrail** for logs
