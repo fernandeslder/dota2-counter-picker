@@ -14,6 +14,7 @@ The app is deployed at https://dota2-counter-picker.onrender.com/. Please note t
 1. <a href="#1-about">About</a>
 2. <a href="#2-running-the-main-branch-locally">Running the Main Branch Locally</a>
 3. <a href="#3-technologies-used">Technologies Used</a>
+4. <a href="#4-branches">Branches</a>
 
 ## <a>**1. About**</a>
 
@@ -72,3 +73,12 @@ gunicorn -w 4 -k sync --worker-connections 1000 --timeout 1000 app:app
 - **Render** to host the application
 - **Make** (formerly Integromat) scenarios to schedule sync calls (as cron-job.org has 30 seconds max timeout)
 - **Papertrail** for logs
+
+## <a>**4. Branches**</a>
+This repository has 3 major branches:
+
+- **main** - the main branch which is deployed on render.com
+
+- **local_deployment** - which can be run as is, will sync the data to local file system, uses scheduler to sync the data at 12 hour intervals, it does not have an API endpoint to sync data, it does not have any limiter to rate limit api requests.
+
+- **local_gdrive** - which was used to test implementing Google Drive as the file system to store the pickled data files. Requires credentials for a Google Cloud service account with Google Drive API enabled in the base directory as "creds.json".
