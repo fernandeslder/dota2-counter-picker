@@ -15,6 +15,7 @@ The app is deployed at https://dota2-counter-picker.onrender.com/. Please note t
 2. <a href="#2-running-the-main-branch-locally">Running the Main Branch Locally</a>
 3. <a href="#3-technologies-used">Technologies Used</a>
 4. <a href="#4-branches">Branches</a>
+5. <a href="#5-folder-structure">Folder Structure</a>
 
 ## <a>**1. About**</a>
 
@@ -82,3 +83,50 @@ This repository has 3 major branches:
 - **local_deployment** - which can be run as is, will sync the data to local file system, uses scheduler to sync the data at 12 hour intervals, it does not have an API endpoint to sync data, it does not have any limiter to rate limit api requests.
 
 - **local_gdrive** - which was used to test implementing Google Drive as the file system to store the pickled data files. Requires credentials for a Google Cloud service account with Google Drive API enabled in the base directory as "creds.json".
+
+## <a>**5. Folder Structure**</a>
+```
+dota2-counter-picker
+|-- dota2-counter-picker-frontend
+|   |-- build
+|   |-- node_modules
+|   |-- public
+|   |   |-- assets
+|   |   |   |-- img
+|   |   |   |   |-- Abaddon.jpg
+|   |   |   |   |-- Alchemist.jpg
+|   |   |   |   |-- Ancient Apparition.jpg
+|   |   |   |   |-- ....jpg
+|   |   |-- favicon.ico
+|   |   |-- index.html
+|   |-- src
+|   |   |-- components
+|   |   |   |-- Dota2DataTable.css
+|   |   |   |-- Dota2DataTable.js
+|   |   |   |-- HeroPicker.css
+|   |   |   |-- HeroPicker.js
+|   |   |-- data
+|   |   |   |-- all_hero_names_list.json
+|   |   |-- App.css
+|   |   |-- App.js
+|   |   |-- index.css
+|   |   |-- index.js
+|   |-- package-lock.json
+|   |-- package.json
+|-- logs
+|   |-- app.log
+|-- temp
+|   |-- dbuff_adv_data.pkl
+|   |-- dbuff_wr_data.pkl
+|-- app.py
+|-- constants.py
+|-- controllers.py
+|-- scheduler.py
+|-- services.py
+|-- utils.py
+|-- requirements.txt
+|-- creds.json
+|-- Procfile
+|-- .env
+|-- README.md
+```
