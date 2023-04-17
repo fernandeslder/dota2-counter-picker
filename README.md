@@ -82,7 +82,7 @@ This repository has 3 major branches:
 
 - **local_deployment** - which can be run as is, will sync the data to local file system, uses scheduler to sync the data at 12 hour intervals, it does not have an API endpoint to sync data, it does not have any limiter to rate limit api requests.
 
-- **local_gdrive** - which was used to test implementing Google Drive as the file system to store the pickled data files. Requires credentials for a Google Cloud service account with Google Drive API enabled in the base directory as "creds.json".
+- **local_gdrive** - which was used to test implementing Google Drive as the file system to store the pickled data files before deploying to render. Requires credentials for a Google Cloud service account with Google Drive API enabled in the base directory as "creds.json".
 
 ## <a>**5. Folder Structure**</a>
 ```
