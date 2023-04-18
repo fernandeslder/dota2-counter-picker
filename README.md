@@ -15,7 +15,8 @@ The app is deployed at https://dota2-counter-picker.onrender.com/. Please note t
 2. <a href="#2-running-the-main-branch-locally">Running the Main Branch Locally</a>
 3. <a href="#3-technologies-used">Technologies Used</a>
 4. <a href="#4-branches">Branches</a>
-5. <a href="#5-folder-structure">Folder Structure</a>
+5. <a href="#5-application-development-challenges">Application Development Challenges</a>
+6. <a href="#6-folder-structure">Folder Structure</a>
 
 ## <a>**1. About**</a>
 
@@ -84,7 +85,29 @@ This repository has 3 major branches:
 
 - **local_gdrive** - which was used to test implementing Google Drive as the file system to store the pickled data files before deploying to render. Requires credentials for a Google Cloud service account with Google Drive API enabled in the base directory as "creds.json".
 
-## <a>**5. Folder Structure**</a>
+## <a>**5. Application Development Challenges**</a>
+1. #### **Syncing Data:**
+    One of the main challenges faced during the development of this application was syncing data.
+    
+    Initially, an API endpoint was used to sync data. However, this approach required manually calling the API.
+    
+    To automate the syncing process, a scheduler was implemented. Unfortunately, the scheduler would not work on Render's free service as the application is put to sleep (shutdown) after 15 minutes of inactivity. Therefore, it was necessary to switch back to using the API endpoint.
+
+    Make (formerly Integromat) scenarios were used to schedule sync calls for automation.
+
+    To ensure the security of the syncing process, a simple authentication filter using an environment variable key was implemented for the /syncData endpoint.
+
+2. #### **Ephemeral Filesystem:**
+    Another challenge faced during the development of the application was the ephemeral filesystem.
+    
+    Since Render has an ephemeral filesystem, the synced data would not persist.
+    
+    To resolve this problem, the application implemented a feature that uses Google Drive as a file system to store pickled data from the sync process.
+    
+    A service account was utilized to automate authentication through `creds.json.`
+
+
+## <a>**6. Folder Structure**</a>
 ```
 dota2-counter-picker
 |-- dota2-counter-picker-frontend
