@@ -17,6 +17,7 @@ The app is deployed at https://dota2-counter-picker.onrender.com/. Please note t
 4. <a href="#4-branches">Branches</a>
 5. <a href="#5-application-development-challenges">Application Development Challenges</a>
 6. <a href="#6-folder-structure">Folder Structure</a>
+7. <a href="#7-data-used">Data Used</a>
 
 ## <a>**1. About**</a>
 
@@ -104,7 +105,7 @@ This repository has 3 major branches:
     
     To resolve this problem, the application implemented a feature that uses Google Drive as a file system to store pickled data from the sync process.
     
-    A service account was utilized to automate authentication through `creds.json.`
+    A service account was utilized to automate authentication through `creds.json`.
 
 
 ## <a>**6. Folder Structure**</a>
@@ -153,3 +154,10 @@ dota2-counter-picker
 |-- .env
 |-- README.md
 ```
+
+## <a>**7. Data Used**</a>
+
+This application utilizes data obtained from the website Dotabuff. The counter data is fetched from the URL `"https://www.dotabuff.com/heroes/{hero_name}/counters"`, while the hero names and images are obtained from `"https://www.dotabuff.com/heroes"`.
+
+<br>
+<sub style="text-align: right">Developed by Leander Fernandes (fernandeslder)</sub>
