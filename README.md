@@ -160,4 +160,5 @@ dota2-counter-picker
 This application utilizes data obtained from the website Dotabuff. The counter data is fetched from the URL `"https://www.dotabuff.com/heroes/{hero_name}/counters"`, while the hero names and images are obtained from `"https://www.dotabuff.com/heroes"`.
 
 <br>
-<sub style="text-align: right">Developed by Leander Fernandes (fernandeslder)</sub>
+<hr>
+<sub>Developed by Leander Fernandes (fernandeslder)</sub>

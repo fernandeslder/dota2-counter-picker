@@ -7,12 +7,14 @@ function HeroPicker() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedHeroes, setSelectedHeroes] = useState([]);
   const [heroesSelected, setHeroesSelected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [heroData, setHeroData] = useState({});
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchHeroData = async () => {
       if (selectedHeroes.length > 0) {
+        setIsLoading(true);
         try {
           const response = await fetch("https://dota2-counter-picker.onrender.com/getHeroData", {
             method: "POST",
@@ -37,6 +39,7 @@ function HeroPicker() {
         setError("");
         setHeroData({});
       }
+      setIsLoading(false);
     };
     fetchHeroData();
   }, [selectedHeroes]);
@@ -70,6 +73,11 @@ function HeroPicker() {
 
   return (
     <div className="hero-picker">
+      {isLoading && (
+        <div className="loading-page">
+          <div className="loading-page__message">Loading...</div>
+        </div>
+      )}
       <div className="search-bar">
         <input
           type="text"
