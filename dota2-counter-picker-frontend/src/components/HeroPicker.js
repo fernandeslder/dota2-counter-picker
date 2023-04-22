@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Dota2DataTable from "./Dota2DataTable";
 import heroList from "../data/all_hero_names_list.json";
 import "./HeroPicker.css";
@@ -24,7 +26,7 @@ function HeroPicker() {
             body: JSON.stringify({ hero_list: selectedHeroes })
           });
           const data = await response.json();
-          if (data.status == 'success') {
+          if (data.status === 'success') {
             setHeroData(data.data);
             setError("");
           } else {
@@ -58,6 +60,11 @@ function HeroPicker() {
     } else if (selectedHeroes.length < 5) {
       setSelectedHeroes([...selectedHeroes, hero]);
       setHeroesSelected(true);
+    } else {
+      toast.error('Max 5 heroes can be selected', {
+        position: toast.POSITION.BOTTOM_RIGHT,
+        autoClose: 3000,
+      });
     }
   };
 
@@ -118,6 +125,7 @@ function HeroPicker() {
       </div>
       {error && <div className="error-message">{error}</div>}
       <Dota2DataTable data={heroData} />
+      <ToastContainer theme="dark" />
     </div>
   );
 }
