@@ -1,3 +1,5 @@
+# **App is currently inactive/out of order due to major changes to the dotabuff website**
+
 # **Dota 2 Counter Picker**
 The Dota 2 Counter Picker App scrapes and displays data from dotabuff in an simple and intuitive way so that the user can visualise which heroes are best against the enemy heroes selected.
 
