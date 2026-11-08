@@ -1,15 +1,17 @@
-// Tiny service worker: network-first for data (stay fresh), cache-first for everything else.
-const CACHE = "d2cp-v1";
+// Tiny service worker. Pages and data: network-first (always fresh when online, cached copy offline).
+// Hashed build assets (/assets/*): cache-first, since their filenames change on every build.
+const CACHE = "d2cp-v2";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) =>
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
+const store = (req, r) => { const c = r.clone(); caches.open(CACHE).then((x) => x.put(req, c)); return r; };
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
-  const isData = req.url.includes("/data/");
+  const hashed = new URL(req.url).pathname.startsWith("/assets/");
   e.respondWith(
-    isData
-      ? fetch(req).then((r) => { const c = r.clone(); caches.open(CACHE).then((x) => x.put(req, c)); return r; }).catch(() => caches.match(req))
-      : caches.match(req).then((hit) => hit || fetch(req).then((r) => { const c = r.clone(); caches.open(CACHE).then((x) => x.put(req, c)); return r; }))
+    hashed
+      ? caches.match(req).then((hit) => hit || fetch(req).then((r) => store(req, r)))
+      : fetch(req, { cache: "no-cache" }).then((r) => store(req, r)).catch(() => caches.match(req))
   );
 });

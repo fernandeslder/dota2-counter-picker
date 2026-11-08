@@ -130,7 +130,7 @@ export default function App() {
             {SITE.title} <span className="badge">{SITE.tag}</span>
           </h1>
           <p className="sub">
-            Dotabuff data · updated {ago(data.updated)}
+            Dotabuff data{data.patch ? ` · patch ${data.patch}` : ""} · updated {ago(data.updated)}
             {OTHER_URL && (
               <>
                 {" · "}
@@ -181,7 +181,7 @@ export default function App() {
       </main>
 
       <footer>
-        Hero stats ({MODE === "turbo" ? "Turbo, last 7 days" : "last 7 days"}), roles and lanes are scraped from <a href={data.source}>Dotabuff</a>.
+        All numbers are from the current patch{data.patch ? ` (${data.patch})` : ""} only: {MODE === "turbo" ? "Turbo " : ""}hero stats, roles and lanes scraped from <a href={data.source}>Dotabuff</a>.
         Hero-vs-hero matchups are all game modes combined, since Dotabuff doesn't publish them per mode.
         Win chance is a rough estimate, not a prediction. Not affiliated with Valve or Dotabuff.
       </footer>

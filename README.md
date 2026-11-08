@@ -5,6 +5,8 @@ Two tools. Turbo has no enemy/ban selection in the builder, since every Turbo pi
 - **Pick helper / Team builder**: add your pick and allies; heroes are ranked by the mode's win rate plus a synergy bonus for roles and lanes your team still lacks. On Classic you can also add enemies (and bans) to rank by counters, with a per-enemy advantage column. Everything is optional. Filter by position (core/support), multiple roles at once (any/all), lane and attribute. Dotabuff has no hero-with-hero data, so synergy is role and lane coverage only.
 - **Win chance**: fill both teams for a rough win-probability estimate from hero win rates and pairwise matchups.
 
+All numbers are from the **current patch only** (auto-detected by the scraper).
+
 Drafts are shareable via the URL.
 
 Two sites are built from this repo:

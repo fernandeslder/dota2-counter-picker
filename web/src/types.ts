@@ -18,6 +18,7 @@ export interface Hero {
 
 export interface MatchupData {
   updated: string;
+  patch?: string;
   source: string;
   heroes: Hero[];
   /** [counter][enemy], all game modes (Dotabuff doesn't split matchups by mode) */

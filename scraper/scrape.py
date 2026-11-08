@@ -4,6 +4,7 @@
 Dotabuff sits behind Cloudflare, so plain `requests` gets 403; curl_cffi
 impersonates a real Chrome TLS fingerprint.
 
+ALL data is for the current patch only (auto-detected, see detect_patch).
 Hero-level stats (win/pick/ban rate, tier) are scraped per game mode: the heroes meta page
 honours `mode=turbo`. Hero-vs-hero matchup pages ignore any mode filter, so the matrices are all-modes.
 Per-hero roles/lanes/attributes come from each hero's overview page.
@@ -46,12 +47,33 @@ def pct(text):
     return float(m.group()) if m else None
 
 
-META = BASE + "/heroes?show=heroes&view=meta&date=7d"
+META = BASE + "/heroes?show=heroes&view=meta&date="
+PATCH_FLOOR = (7, 37)  # earliest patch to start probing from
 
 
-def scrape_stats(mode):
-    """Hero list + win/pick/ban rate for one mode ('normal' or 'turbo')."""
-    url = META + ("&mode=turbo" if mode == "turbo" else "")
+def detect_patch():
+    """Latest Dotabuff patch id, e.g. '7.41'. Probes consecutive patches until Dotabuff 404s.
+    (The hero meta page takes `date=7.41`; the counters page takes `date=patch_7.41`.)"""
+    latest, (major, minor) = None, PATCH_FLOOR
+    while True:
+        tag = f"{major}.{minor:02d}"
+        try:
+            get(f"{BASE}/heroes/axe/counters?date=patch_{tag}", tries=1)
+            latest, minor = tag, minor + 1
+        except Exception:
+            if latest and minor != 0 and major < 9:  # patch numbering can roll over (7.41 -> 8.00)
+                major, minor = major + 1, 0
+                continue
+            break
+        time.sleep(DELAY)
+    if not latest:
+        sys.exit("could not detect the current patch")
+    return latest
+
+
+def scrape_stats(mode, patch):
+    """Hero list + win/pick/ban rate for one mode ('normal' or 'turbo'), current patch only."""
+    url = META + patch + ("&mode=turbo" if mode == "turbo" else "")
     soup = BeautifulSoup(get(url), "html.parser")
     out = []
     for tr in soup.select("table tbody tr"):
@@ -99,8 +121,8 @@ def scrape_profile(slug):
     return {"roles": roles, "attack": attack, "attr": attr, "lanes": lanes}
 
 
-def scrape_counters(slug):
-    soup = BeautifulSoup(get(f"{BASE}/heroes/{slug}/counters"), "html.parser")
+def scrape_counters(slug, patch):
+    soup = BeautifulSoup(get(f"{BASE}/heroes/{slug}/counters?date=patch_{patch}"), "html.parser")
     header = soup.find("header", string="Matchups")
     table = header.find_next_sibling("article").find("table")
     out = {}
@@ -116,8 +138,10 @@ def scrape_counters(slug):
 
 
 def main():
-    normal = scrape_stats("normal")
-    turbo = {h["id"]: h for h in scrape_stats("turbo")}
+    patch = detect_patch()
+    print(f"current patch: {patch}", flush=True)
+    normal = scrape_stats("normal", patch)
+    turbo = {h["id"]: h for h in scrape_stats("turbo", patch)}
     if len(normal) < 100 or len(turbo) < 100:
         sys.exit(f"parsed {len(normal)} normal / {len(turbo)} turbo heroes, layout probably changed")
     ids = [h["id"] for h in normal]
@@ -129,7 +153,7 @@ def main():
     profiles = {}
 
     for e, slug in enumerate(ids):
-        for c_slug, (a, w, m) in scrape_counters(slug).items():
+        for c_slug, (a, w, m) in scrape_counters(slug, patch).items():
             if c_slug in idx:
                 c = idx[c_slug]
                 adv[c][e], wr[c][e], n[c][e] = a, 100 - w, m  # w is page hero's WR, so counter's is 100-w
@@ -158,6 +182,7 @@ def main():
 
     data = {
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "patch": patch,
         "source": f"{BASE}/heroes",
         "heroes": heroes,
         "adv": [[round(v, 2) for v in r] for r in adv],
