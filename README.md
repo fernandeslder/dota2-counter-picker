@@ -1,10 +1,9 @@
 # Dota 2 Counter Picker
 
-Three tools (Turbo has no counter-pick, since every Turbo pick is blind):
+Two tools. Turbo has no enemy/ban selection in the builder, since every Turbo pick is blind:
 
-- **Team builder**: add your pick and your allies; heroes are ranked by the mode's win rate plus a bonus for the roles your team still lacks. Filter by position (core/support), multiple roles at once (any/all), lane and attribute.
+- **Pick helper / Team builder**: add your pick and allies; heroes are ranked by the mode's win rate plus a synergy bonus for roles and lanes your team still lacks. On Classic you can also add enemies (and bans) to rank by counters, with a per-enemy advantage column. Everything is optional. Filter by position (core/support), multiple roles at once (any/all), lane and attribute. Dotabuff has no hero-with-hero data, so synergy is role and lane coverage only.
 - **Win chance**: fill both teams for a rough win-probability estimate from hero win rates and pairwise matchups.
-- **Counter-pick** (Classic only): pick enemies, rank counters by cumulative advantage and average win rate.
 
 Drafts are shareable via the URL.
 

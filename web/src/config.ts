@@ -10,9 +10,8 @@ export const SITE = {
   turbo: { title: "Dota 2 Turbo Picker", tag: "Turbo", accent: "#ffc83d", other: "Classic" },
 }[MODE];
 
-/** Counter-picking needs a draft with visible enemies, so it only exists on the classic site. */
+/** Enemies and bans are only useful in a normal draft; Turbo picks are blind. */
 export const VIEWS: { id: View; label: string }[] = [
-  ...(MODE === "normal" ? [{ id: "counter" as View, label: "Counter-pick" }] : []),
-  { id: "team", label: "Team builder" },
+  { id: "team", label: MODE === "normal" ? "Pick helper" : "Team builder" },
   { id: "win", label: "Win chance" },
 ];

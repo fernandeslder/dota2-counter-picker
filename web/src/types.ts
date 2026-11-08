@@ -27,7 +27,7 @@ export interface MatchupData {
 }
 
 export type Role = "enemy" | "ally" | "mine" | "ban";
-export type View = "counter" | "team" | "win";
+export type View = "team" | "win";
 
 export interface Selection {
   enemy: string[];
@@ -44,15 +44,6 @@ export interface Filters {
   attrs: string[];
 }
 
-export interface Row {
-  hero: Hero;
-  index: number;
-  cumAdv: number;
-  avgWr: number;
-  minMatches: number;
-  perEnemy: number[];
-}
-
 export interface TeamRow {
   hero: Hero;
   index: number;
@@ -60,6 +51,8 @@ export interface TeamRow {
   pick: number;
   tier: string;
   fills: string[];
+  fillsLane: string | null;
+  perEnemy: number[];
   vsEnemies: number | null;
   fit: number;
 }

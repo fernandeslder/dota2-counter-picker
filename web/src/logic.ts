@@ -1,5 +1,5 @@
 import type { Mode } from "./config";
-import type { Filters, Hero, MatchupData, Role, Row, Selection, Stat, TeamRow, View } from "./types";
+import type { Filters, Hero, MatchupData, Role, Selection, Stat, TeamRow, View } from "./types";
 
 export const LIMITS: Record<Role, number> = { enemy: 5, ally: 4, mine: 1, ban: 12 };
 
@@ -26,6 +26,9 @@ export const ATTRS: { id: string; label: string }[] = [
 /** How many heroes with a role a balanced team wants. Used for the team-builder "fills" bonus. */
 export const TEAM_NEEDS: Record<string, number> = { Carry: 1, Support: 2, Disabler: 2, Initiator: 1, Durable: 1 };
 export const FILL_BONUS = 0.5; // fit-score points per missing role a hero fills
+export const LANE_BONUS = 0.5; // fit-score points when a hero mainly plays a lane nobody on the team covers
+export const CORE_LANES = ["Safe Lane", "Mid Lane", "Off Lane"];
+export const MIN_MATCHUP_N = 100; // ignore matchups with fewer matches than this (too noisy)
 
 export function emptySelection(): Selection {
   return { enemy: [], ally: [], mine: [], ban: [] };
@@ -60,46 +63,6 @@ export function heroMatches(h: Hero, f: Filters): boolean {
 
 export const filtersActive = (f: Filters) => f.position.length + f.roles.length + f.lanes.length + f.attrs.length > 0;
 
-// ---------- counter-pick (classic): rank heroes against chosen enemies ----------
-
-export function computeRows(data: MatchupData, sel: Selection, minMatches: number): Row[] {
-  const idx = new Map(data.heroes.map((h, i) => [h.id, i]));
-  const enemies = sel.enemy.map((id) => idx.get(id)).filter((i): i is number => i !== undefined);
-  if (!enemies.length) return [];
-  const taken = takenIds(sel);
-
-  const rows: Row[] = [];
-  data.heroes.forEach((hero, c) => {
-    if (taken.has(hero.id)) return;
-    const perEnemy = enemies.map((e) => data.adv[c][e]);
-    const minN = Math.min(...enemies.map((e) => data.n[c][e]));
-    if (minN < minMatches) return;
-    rows.push({
-      hero,
-      index: c,
-      perEnemy,
-      cumAdv: perEnemy.reduce((a, b) => a + b, 0),
-      avgWr: enemies.reduce((a, e) => a + data.wr[c][e], 0) / enemies.length,
-      minMatches: minN,
-    });
-  });
-  return rows;
-}
-
-export type SortKey = "cumAdv" | "avgWr" | "minMatches" | "name" | `enemy:${number}`;
-
-export function sortRows(rows: Row[], key: SortKey, dir: "asc" | "desc"): Row[] {
-  const val = (r: Row): number | string =>
-    key === "name" ? r.hero.name
-    : key.startsWith("enemy:") ? r.perEnemy[Number(key.slice(6))]
-    : r[key as "cumAdv" | "avgWr" | "minMatches"];
-  const sign = dir === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => {
-    const x = val(a), y = val(b);
-    return (typeof x === "string" ? x.localeCompare(y as string) : (x as number) - (y as number)) * sign;
-  });
-}
-
 export const takenIds = (sel: Selection) => new Set([...sel.enemy, ...sel.ally, ...sel.mine, ...sel.ban]);
 
 // ---------- team builder: what should we pick? ----------
@@ -120,6 +83,8 @@ export function teamRows(data: MatchupData, mode: Mode, sel: Selection, f: Filte
   const idx = idxMap(data);
   const team = [...sel.mine, ...sel.ally].map((id) => byId.get(id)).filter((h): h is Hero => !!h);
   const missing = missingRoles(team);
+  const covered = new Set(team.map(mainLane));
+  const openLanes = CORE_LANES.filter((l) => !covered.has(l));
   const enemies = sel.enemy.map((id) => idx.get(id)).filter((i): i is number => i !== undefined);
   const taken = takenIds(sel);
 
@@ -129,10 +94,13 @@ export function teamRows(data: MatchupData, mode: Mode, sel: Selection, f: Filte
     const s = stat(hero, mode);
     if (s.wr == null) return;
     const fills = missing.filter((r) => hero.roles.includes(r));
-    const vs = enemies.length ? enemies.reduce((a, e) => a + data.adv[c][e], 0) / enemies.length : null;
+    const lane = mainLane(hero);
+    const fillsLane = lane && openLanes.includes(lane) && team.length > 0 ? lane : null;
+    const perEnemy = enemies.map((e) => (data.n[c][e] >= MIN_MATCHUP_N ? data.adv[c][e] : 0));
+    const vs = perEnemy.length ? perEnemy.reduce((a, b) => a + b, 0) / perEnemy.length : null;
     rows.push({
-      hero, index: c, wr: s.wr, pick: s.pick ?? 0, tier: s.tier ?? "-", fills, vsEnemies: vs,
-      fit: s.wr - 50 + (vs ?? 0) + FILL_BONUS * fills.length,
+      hero, index: c, wr: s.wr, pick: s.pick ?? 0, tier: s.tier ?? "-", fills, fillsLane, perEnemy, vsEnemies: vs,
+      fit: s.wr - 50 + (vs ?? 0) + FILL_BONUS * fills.length + (fillsLane ? LANE_BONUS : 0),
     });
   });
   return rows;

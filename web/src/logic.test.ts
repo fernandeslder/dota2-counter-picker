@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  computeRows, decodeHash, emptyFilters, emptySelection, encodeHash, heroMatches, missingRoles,
-  sortRows, teamRows, winChance,
+  decodeHash, emptyFilters, emptySelection, encodeHash, heroMatches, missingRoles,
+  teamRows, winChance,
 } from "./logic";
 import type { Hero, MatchupData } from "./types";
 
@@ -21,27 +21,6 @@ const data: MatchupData = {
   n: [[0, 900, 50], [800, 0, 700], [600, 500, 0]],
 };
 const sel = (o: Partial<ReturnType<typeof emptySelection>>) => ({ ...emptySelection(), ...o });
-
-describe("computeRows (counter-pick)", () => {
-  it("sums advantage and averages win rate over enemies", () => {
-    const rows = computeRows(data, sel({ enemy: ["a", "c"] }), 0);
-    const b = rows.find((r) => r.hero.id === "b")!;
-    expect(b.cumAdv).toBe(7);
-    expect(b.avgWr).toBe(53.5);
-    expect(rows.map((r) => r.hero.id)).toEqual(["b"]);
-  });
-  it("hides allies, bans, my pick and low-sample matchups", () => {
-    expect(computeRows(data, sel({ enemy: ["a"], ally: ["b"] }), 0).map((r) => r.hero.id)).toEqual(["c"]);
-    expect(computeRows(data, sel({ enemy: ["c"] }), 100).map((r) => r.hero.id)).toEqual(["b"]);
-  });
-  it("is empty with no enemies", () => {
-    expect(computeRows(data, emptySelection(), 0)).toEqual([]);
-  });
-  it("sorts by cumulative advantage desc", () => {
-    const rows = computeRows(data, sel({ enemy: ["a"] }), 0);
-    expect(sortRows(rows, "cumAdv", "desc").map((r) => r.hero.id)).toEqual(["b", "c"]);
-  });
-});
 
 describe("filters", () => {
   const [a, b, c] = data.heroes;
@@ -80,6 +59,16 @@ describe("team builder", () => {
   it("adds average advantage vs known enemies", () => {
     const rows = teamRows(data, "normal", sel({ mine: ["a"], enemy: ["c"] }), emptyFilters());
     expect(rows.find((r) => r.hero.id === "b")!.vsEnemies).toBe(4);
+  });
+  it("works with no enemies, and ignores low-sample matchups", () => {
+    expect(teamRows(data, "normal", emptySelection(), emptyFilters()).every((r) => r.vsEnemies === null)).toBe(true);
+    // a vs c has only 50 matches, so its -2 doesn't count
+    const r = teamRows(data, "normal", sel({ enemy: ["c"] }), emptyFilters()).find((x) => x.hero.id === "a")!;
+    expect(r.vsEnemies).toBe(0);
+  });
+  it("rewards heroes whose main lane the team doesn't cover yet", () => {
+    const r = teamRows(data, "normal", sel({ ally: ["a"] }), emptyFilters()).find((x) => x.hero.id === "c")!;
+    expect(r.fillsLane).toBe("Off Lane");
   });
 });
 

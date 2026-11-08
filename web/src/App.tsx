@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MODE, OTHER_URL, SITE, VIEWS } from "./config";
 import {
-  LIMITS, ROLE_LABELS, computeRows, decodeHash, emptyFilters, emptySelection, encodeHash, missingRoles,
-  sortRows, sortTeamRows, stat, takenIds, teamRows, winChance, type SortKey, type TeamSortKey,
+  LIMITS, ROLE_LABELS, decodeHash, emptyFilters, emptySelection, encodeHash, missingRoles,
+  sortTeamRows, teamRows, winChance, type TeamSortKey,
 } from "./logic";
 import { FilterPanel, HeroGrid, SelectionBar, Tier, img, sign } from "./parts";
 import type { Filters, Hero, MatchupData, Role, Selection, View } from "./types";
 
 const VIEW_ROLES: Record<View, Role[]> = {
-  counter: ["enemy", "ally", "ban"],
-  team: ["mine", "ally"],
+  team: MODE === "normal" ? ["mine", "ally", "enemy", "ban"] : ["mine", "ally"],
   win: ["mine", "ally", "enemy"],
 };
 const HINTS: Record<View, string> = {
-  counter: "Pick the enemy heroes. Use Allies / Banned to hide heroes you can't or won't pick.",
-  team: "Add your teammates' heroes (and yours, if you've already chosen) to see what to pick next.",
+  team: MODE === "normal"
+    ? "Add allies (and your pick) to find heroes that fit the team. Add enemies to also rank by counters. All optional."
+    : "Add your teammates' heroes (and yours, if you've already chosen) to see what to pick next.",
   win: "Fill in both teams (your pick + allies vs. enemies) to see the estimated win chance.",
 };
 const MODE_LABEL = MODE === "turbo" ? "Turbo" : "Classic";
@@ -176,7 +176,6 @@ export default function App() {
           <HeroGrid heroes={heroes} taken={taken} onPick={pick} query={query} />
         </section>
 
-        {view === "counter" && <CounterView data={data} sel={viewSel} byId={byId} />}
         {view === "team" && <TeamView data={data} sel={viewSel} byId={byId} filters={filters} setFilters={setFilters} />}
         {view === "win" && <WinView data={data} sel={viewSel} byId={byId} />}
       </main>
@@ -191,73 +190,6 @@ export default function App() {
 }
 
 type ViewProps = { data: MatchupData; sel: Selection; byId: Map<string, Hero> };
-
-function CounterView({ data, sel, byId }: ViewProps) {
-  const [minMatches, setMinMatches] = useState(100);
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "cumAdv", dir: "desc" });
-  const rows = useMemo(() => computeRows(data, sel, minMatches), [data, sel, minMatches]);
-  const sorted = useMemo(() => sortRows(rows, sort.key, sort.dir), [rows, sort]);
-  const top = useMemo(() => sortRows(rows, "cumAdv", "desc").slice(0, 5), [rows]);
-  const setKey = (key: SortKey) =>
-    setSort((s) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" }));
-  const arrow = (key: SortKey) => (sort.key === key ? (sort.dir === "desc" ? " ▼" : " ▲") : "");
-
-  if (!sel.enemy.length) return <p className="center hint">Select at least one enemy hero to see counters.</p>;
-  return (
-    <>
-      <section className="top5">
-        {top.map((r, i) => (
-          <article key={r.hero.id} className="card">
-            <span className="rank">#{i + 1}</span>
-            <img src={img(r.hero.id)} alt="" />
-            <b>{r.hero.name}</b>
-            <span className="pos">{sign(r.cumAdv)}% adv</span>
-            <small>{r.avgWr.toFixed(1)}% avg WR</small>
-          </article>
-        ))}
-      </section>
-      <section className="panel">
-        <div className="toolbar">
-          <label>
-            Min matches per matchup{" "}
-            <select value={minMatches} onChange={(e) => setMinMatches(Number(e.target.value))}>
-              {[0, 100, 500, 1000, 5000].map((v) => <option key={v} value={v}>{v === 0 ? "any" : `${v}+`}</option>)}
-            </select>
-          </label>
-          <span className="hint">{sorted.length} heroes</span>
-        </div>
-        <div className="scroll">
-          <table>
-            <thead>
-              <tr>
-                <th onClick={() => setKey("name")}>Hero{arrow("name")}</th>
-                {sel.enemy.map((id, i) => (
-                  <th key={id} onClick={() => setKey(`enemy:${i}`)}>
-                    <img src={img(id)} alt="" /> {byId.get(id)?.name}{arrow(`enemy:${i}`)}
-                  </th>
-                ))}
-                <th onClick={() => setKey("cumAdv")}>Cumulative adv.{arrow("cumAdv")}</th>
-                <th onClick={() => setKey("avgWr")}>Avg WR{arrow("avgWr")}</th>
-                <th onClick={() => setKey("minMatches")}>Min matches{arrow("minMatches")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((r) => (
-                <tr key={r.hero.id}>
-                  <td className="name"><img src={img(r.hero.id)} alt="" /> {r.hero.name}<Tier t={stat(r.hero, MODE).tier ?? "-"} /></td>
-                  {r.perEnemy.map((v, i) => <td key={i} style={{ background: heat(v) }}>{sign(v)}</td>)}
-                  <td className="strong" style={{ background: heat(r.cumAdv / Math.max(1, r.perEnemy.length)) }}>{sign(r.cumAdv)}</td>
-                  <td className={r.avgWr >= 50 ? "pos" : "neg"}>{r.avgWr.toFixed(2)}%</td>
-                  <td className="dim">{r.minMatches.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </>
-  );
-}
 
 function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filters: Filters; setFilters: (f: Filters) => void }) {
   const [sort, setSort] = useState<{ key: TeamSortKey; dir: "asc" | "desc" }>({ key: "fit", dir: "desc" });
@@ -278,13 +210,16 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
             ? <>Your team still lacks: {missing.map((r) => ROLE_LABELS[r]).join(", ")}.</>
             : "Your team covers every key role."
           : "No teammates yet: showing the strongest heroes right now."}
-        {" "}Fit = {MODE_LABEL} win-rate edge + 0.5 per missing role the hero fills.
+        {" "}Fit = {MODE_LABEL} win-rate edge{sel.enemy.length ? " + average advantage vs the enemies" : ""} + 0.5 per missing role
+        and 0.5 per open lane the hero fills (synergy). Dotabuff has no hero-with-hero data, so synergy is role and lane coverage.
       </p>
       <div className="scroll">
         <table>
           <thead>
             <tr>
               <th onClick={() => setKey("name")}>Hero{arrow("name")}</th>
+              {sel.enemy.map((id) => <th key={id}><img src={img(id)} alt="" /> {byId.get(id)?.name}</th>)}
+              {sel.enemy.length > 0 && <th onClick={() => setKey("vsEnemies")}>vs avg{arrow("vsEnemies")}</th>}
               <th onClick={() => setKey("wr")}>{MODE_LABEL} WR{arrow("wr")}</th>
               <th onClick={() => setKey("pick")}>Pick rate{arrow("pick")}</th>
               <th>Fills</th>
@@ -298,9 +233,14 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
                   <img src={img(r.hero.id)} alt="" /> {r.hero.name}<Tier t={r.tier} />
                   <small className="dim roles-list">{r.hero.roles.map((x) => ROLE_LABELS[x] ?? x).join(" · ")}</small>
                 </td>
+                {r.perEnemy.map((v, i) => <td key={i} style={{ background: heat(v) }}>{sign(v)}</td>)}
+                {r.vsEnemies != null && <td className="strong" style={{ background: heat(r.vsEnemies) }}>{sign(r.vsEnemies)}</td>}
                 <td className={r.wr >= 50 ? "pos" : "neg"}>{r.wr.toFixed(2)}%</td>
                 <td className="dim">{r.pick.toFixed(1)}%</td>
-                <td className="fills">{r.fills.map((x) => <span key={x} className="tag">{ROLE_LABELS[x]}</span>)}</td>
+                <td className="fills">
+                  {r.fills.map((x) => <span key={x} className="tag">{ROLE_LABELS[x]}</span>)}
+                  {r.fillsLane && <span className="tag">{r.fillsLane}</span>}
+                </td>
                 <td className="strong" style={{ background: heat(r.fit * 2) }}>{sign(r.fit)}</td>
               </tr>
             ))}
