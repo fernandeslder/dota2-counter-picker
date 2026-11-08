@@ -67,3 +67,32 @@ footer { max-width: 1200px; margin: 0 auto; padding: 8px 16px 32px; color: var(-
   h1 { font-size: 1.15rem; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); max-height: 320px; }
 }
+
+/* ---- views, filters, team builder, win chance ---- */
+.views { display: flex; gap: 6px; max-width: 1200px; margin: 0 auto 12px; padding: 0 16px; flex-wrap: wrap; }
+.views button { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 16px; }
+.views button.on { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 700; }
+.role.on.mine { background: var(--accent); border-color: var(--accent); color: #111; }
+.role.on.mine small { color: #111; }
+.chip.mine { border-color: var(--accent); }
+.tile.mine { border-color: var(--accent); }
+.filters { display: grid; gap: 8px; margin-bottom: 10px; }
+.frow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.frow b { color: var(--dim); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; margin-right: 4px; }
+.frow b.gap { margin-left: 12px; }
+.pill { background: #1f2430; border: 1px solid var(--line); border-radius: 99px; padding: 3px 12px; font-size: .85rem; }
+.pill:hover { border-color: var(--dim); }
+.pill.on { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 600; }
+.ghost.small { padding: 2px 10px; font-size: .8rem; }
+.teamnote { margin: 4px 0 10px; }
+.roles-list { margin-left: 8px; font-size: .72rem; }
+.fills .tag { display: inline-block; background: #24402e; color: var(--pos); border-radius: 6px; padding: 0 6px; margin-left: 4px; font-size: .75rem; }
+.win { display: grid; gap: 14px; justify-items: center; text-align: center; }
+.gauge { width: min(420px, 100%); }
+.gauge .num { font-size: 3.4rem; font-weight: 800; line-height: 1; color: var(--accent); }
+.gauge .bar { height: 12px; border-radius: 99px; background: var(--neg); margin: 10px 0 4px; overflow: hidden; }
+.gauge .bar div { height: 100%; width: var(--p); background: var(--pos); }
+.breakdown { list-style: none; padding: 0; margin: 0; width: min(520px, 100%); display: grid; gap: 8px; text-align: left; }
+.breakdown li { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; padding: 8px 12px; background: #1f2430; border-radius: 8px; }
+.breakdown li small { grid-column: 1 / -1; color: var(--dim); }
+@media (max-width: 600px) { .roles-list { display: none; } .gauge .num { font-size: 2.6rem; } }

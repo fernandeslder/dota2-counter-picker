@@ -1,6 +1,12 @@
 # Dota 2 Counter Picker
 
-Pick the enemy heroes, get the best counters ranked by cumulative advantage and average win rate. Optional ally/ban lists hide heroes you can't pick; the draft is shareable via the URL.
+Three tools (Turbo has no counter-pick, since every Turbo pick is blind):
+
+- **Team builder**: add your pick and your allies; heroes are ranked by the mode's win rate plus a bonus for the roles your team still lacks. Filter by position (core/support), multiple roles at once (any/all), lane and attribute.
+- **Win chance**: fill both teams for a rough win-probability estimate from hero win rates and pairwise matchups.
+- **Counter-pick** (Classic only): pick enemies, rank counters by cumulative advantage and average win rate.
+
+Drafts are shareable via the URL.
 
 Two sites are built from this repo:
 
@@ -9,7 +15,7 @@ Two sites are built from this repo:
 | Classic | https://d2counter.lder.fyi | `normal` |
 | Turbo | https://turbo.d2counter.lder.fyi | `turbo` |
 
-> Dotabuff's counters pages ignore the `game_mode` filter for anonymous users (verified: identical numbers for turbo vs all-pick; the `date` filter does work and defaults to the last month), so both sites use the same matchup data; the Turbo site says so in its footer.
+> Dotabuff publishes **Turbo hero stats** (`/heroes?...&mode=turbo&date=7d`), which the Turbo site uses. Its hero-vs-hero matchup pages ignore the `mode` filter, so matchups are all-modes on both sites. Roles are Dotabuff's (Valve's) roles: "Durable" is the tank role and "Disabler" covers stunners.
 
 ## How it works
 - `scraper/scrape.py` scrapes Dotabuff (via `curl_cffi` to pass Cloudflare) into `web/public/data/matchups.json` + hero images in `web/public/heroes/`.

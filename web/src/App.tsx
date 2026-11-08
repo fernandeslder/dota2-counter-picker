@@ -1,17 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MODE, OTHER_URL, SITE } from "./config";
-import { LIMITS, computeRows, decodeHash, emptySelection, encodeHash, sortRows, type SortKey } from "./logic";
-import type { Hero, MatchupData, Role, Row, Selection } from "./types";
+import { MODE, OTHER_URL, SITE, VIEWS } from "./config";
+import {
+  LIMITS, ROLE_LABELS, computeRows, decodeHash, emptyFilters, emptySelection, encodeHash, missingRoles,
+  sortRows, sortTeamRows, stat, takenIds, teamRows, winChance, type SortKey, type TeamSortKey,
+} from "./logic";
+import { FilterPanel, HeroGrid, SelectionBar, Tier, img, sign } from "./parts";
+import type { Filters, Hero, MatchupData, Role, Selection, View } from "./types";
 
-const ROLE_LABEL: Record<Role, string> = { enemy: "Enemy", ally: "Ally", ban: "Banned" };
-const img = (id: string) => `/heroes/${id}.jpg`;
-const sign = (v: number) => (v > 0 ? "+" : "") + v.toFixed(2);
+const VIEW_ROLES: Record<View, Role[]> = {
+  counter: ["enemy", "ally", "ban"],
+  team: ["mine", "ally"],
+  win: ["mine", "ally", "enemy"],
+};
+const HINTS: Record<View, string> = {
+  counter: "Pick the enemy heroes. Use Allies / Banned to hide heroes you can't or won't pick.",
+  team: "Add your teammates' heroes (and yours, if you've already chosen) to see what to pick next.",
+  win: "Fill in both teams (your pick + allies vs. enemies) to see the estimated win chance.",
+};
+const MODE_LABEL = MODE === "turbo" ? "Turbo" : "Classic";
 
 function ago(iso: string) {
   const h = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 36e5));
   return h < 1 ? "just now" : h < 48 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
 }
-
 function heat(v: number) {
   const a = Math.min(Math.abs(v) / 8, 1) * 0.55;
   return v === 0 ? undefined : `rgba(${v > 0 ? "60,200,110" : "230,80,80"},${a.toFixed(2)})`;
@@ -21,10 +32,10 @@ export default function App() {
   const [data, setData] = useState<MatchupData | null>(null);
   const [failed, setFailed] = useState(false);
   const [sel, setSel] = useState<Selection>(emptySelection);
-  const [role, setRole] = useState<Role>("enemy");
+  const [view, setView] = useState<View>(VIEWS[0].id);
+  const [role, setRole] = useState<Role>(VIEW_ROLES[VIEWS[0].id][0]);
   const [query, setQuery] = useState("");
-  const [minMatches, setMinMatches] = useState(100);
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "cumAdv", dir: "desc" });
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
   const search = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -34,17 +45,19 @@ export default function App() {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: MatchupData) => {
         setData(d);
-        setSel(decodeHash(location.hash, new Set(d.heroes.map((h) => h.id))));
+        const { sel: s, view: v } = decodeHash(location.hash, new Set(d.heroes.map((h) => h.id)));
+        setSel(s);
+        const start = VIEWS.find((x) => x.id === v)?.id ?? VIEWS[0].id;
+        setView(start);
+        setRole(VIEW_ROLES[start][0]);
       })
       .catch(() => setFailed(true));
   }, []);
 
-  // keep URL in sync so a draft can be shared
   useEffect(() => {
-    if (data) history.replaceState(null, "", encodeHash(sel) ? `#${encodeHash(sel)}` : location.pathname);
-  }, [sel, data]);
+    if (data) history.replaceState(null, "", `#${encodeHash(sel, view)}`);
+  }, [sel, view, data]);
 
-  // "/" focuses search
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "/" && document.activeElement?.tagName !== "INPUT") {
@@ -56,42 +69,55 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const roles = VIEW_ROLES[view];
   const byId = useMemo(() => new Map(data?.heroes.map((h) => [h.id, h])), [data]);
+
+  /** selection restricted to what the current view uses (team builder ignores enemies etc.) */
+  const viewSel = useMemo<Selection>(() => {
+    const s = emptySelection();
+    roles.forEach((r) => (s[r] = sel[r]));
+    return s;
+  }, [sel, roles]);
   const taken = useMemo(() => {
     const m = new Map<string, Role>();
-    (Object.keys(sel) as Role[]).forEach((r) => sel[r].forEach((id) => m.set(id, r)));
+    roles.forEach((r) => sel[r].forEach((id) => m.set(id, r)));
     return m;
-  }, [sel]);
+  }, [sel, roles]);
 
-  const toggle = useCallback(
+  const switchView = (v: View) => {
+    setView(v);
+    if (!VIEW_ROLES[v].includes(role)) setRole(VIEW_ROLES[v][0]);
+  };
+
+  const pick = useCallback(
     (id: string) =>
       setSel((s) => {
-        const cur = [...(Object.keys(s) as Role[])].find((r) => s[r].includes(id));
-        const next: Selection = { enemy: [...s.enemy], ally: [...s.ally], ban: [...s.ban] };
+        const cur = roles.find((r) => s[r].includes(id));
+        const next: Selection = { enemy: [...s.enemy], ally: [...s.ally], mine: [...s.mine], ban: [...s.ban] };
         if (cur) {
           next[cur] = next[cur].filter((x) => x !== id);
           if (cur === role) return next;
         }
-        if (next[role].length >= LIMITS[role]) return s;
-        next[role].push(id);
+        if (next[role].length >= LIMITS[role]) {
+          // my pick is a single slot: replace it
+          if (role === "mine") next.mine = [id];
+          else return s;
+        } else next[role].push(id);
         return next;
       }),
-    [role]
+    [role, roles]
   );
-
-  const rows = useMemo(() => (data ? computeRows(data, sel, minMatches) : []), [data, sel, minMatches]);
-  const sorted = useMemo(() => sortRows(rows, sort.key, sort.dir), [rows, sort]);
-  const top = useMemo(() => sortRows(rows, "cumAdv", "desc").slice(0, 5), [rows]);
+  const clear = () =>
+    setSel((s) => {
+      const n = { ...s };
+      roles.forEach((r) => (n[r] = []));
+      return n;
+    });
 
   const heroes = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (data?.heroes ?? []).filter((h) => !q || h.name.toLowerCase().includes(q));
   }, [data, query]);
-
-  const setSortKey = (key: SortKey) =>
-    setSort((s) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" }));
-  const arrow = (key: SortKey) => (sort.key === key ? (sort.dir === "desc" ? " ▼" : " ▲") : "");
-  const clear = () => setSel(emptySelection());
 
   if (failed) return <main className="center">Could not load matchup data. Please refresh.</main>;
   if (!data) return <main className="center">Loading matchup data…</main>;
@@ -104,7 +130,7 @@ export default function App() {
             {SITE.title} <span className="badge">{SITE.tag}</span>
           </h1>
           <p className="sub">
-            Matchup data from Dotabuff · updated {ago(data.updated)}
+            Dotabuff data · updated {ago(data.updated)}
             {OTHER_URL && (
               <>
                 {" · "}
@@ -113,33 +139,28 @@ export default function App() {
             )}
           </p>
         </div>
-        <button className="ghost" onClick={() => navigator.clipboard?.writeText(location.href)} disabled={!taken.size}>
-          Copy link
-        </button>
+        <button className="ghost" onClick={() => navigator.clipboard?.writeText(location.href)}>Copy link</button>
       </header>
+
+      <nav className="views" role="tablist" aria-label="Mode">
+        {VIEWS.map((v) => (
+          <button key={v.id} role="tab" aria-selected={view === v.id} className={view === v.id ? "on" : ""} onClick={() => switchView(v.id)}>
+            {v.label}
+          </button>
+        ))}
+      </nav>
 
       <main>
         <section className="panel">
-          <div className="roles" role="tablist" aria-label="Selecting as">
-            {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
-              <button key={r} role="tab" aria-selected={role === r} className={`role ${r} ${role === r ? "on" : ""}`} onClick={() => setRole(r)}>
-                {ROLE_LABEL[r]} <small>{sel[r].length}/{LIMITS[r]}</small>
-              </button>
-            ))}
-            <button className="ghost" onClick={clear} disabled={!taken.size}>Clear all</button>
-          </div>
-
-          <div className="chips">
-            {(Object.keys(ROLE_LABEL) as Role[]).flatMap((r) =>
-              sel[r].map((id) => (
-                <button key={id} className={`chip ${r}`} onClick={() => toggle(id)} title="Remove">
-                  <img src={img(id)} alt="" /> {byId.get(id)?.name} <span aria-hidden>×</span>
-                </button>
-              ))
-            )}
-            {!taken.size && <span className="hint">Pick the enemy heroes below. Use Ally / Banned to hide heroes you can't or won't pick.</span>}
-          </div>
-
+          <SelectionBar
+            roles={roles} role={role} setRole={setRole} sel={sel} byId={byId}
+            onRemove={(id) => setSel((s) => {
+              const n = { ...s };
+              roles.forEach((r) => (n[r] = s[r].filter((x) => x !== id)));
+              return n;
+            })}
+            onClear={clear} hint={HINTS[view]}
+          />
           <div className="search">
             <input
               ref={search}
@@ -147,102 +168,172 @@ export default function App() {
               placeholder="Search heroes  ( / )"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && heroes[0]) { toggle(heroes[0].id); setQuery(""); }
+                if (e.key === "Enter" && heroes[0]) { pick(heroes[0].id); setQuery(""); }
                 if (e.key === "Escape") { setQuery(""); search.current?.blur(); }
               }}
             />
           </div>
-
-          <div className="grid">
-            {heroes.map((h) => (
-              <HeroTile key={h.id} hero={h} state={taken.get(h.id)} onClick={() => toggle(h.id)} />
-            ))}
-            {!heroes.length && <span className="hint">No heroes match "{query}".</span>}
-          </div>
+          <HeroGrid heroes={heroes} taken={taken} onPick={pick} query={query} />
         </section>
 
-        {sel.enemy.length === 0 ? (
-          <p className="center hint">Select at least one enemy hero to see counters.</p>
-        ) : (
-          <>
-            <section className="top5">
-              {top.map((r, i) => (
-                <article key={r.hero.id} className="card">
-                  <span className="rank">#{i + 1}</span>
-                  <img src={img(r.hero.id)} alt="" />
-                  <b>{r.hero.name}</b>
-                  <span className="pos">{sign(r.cumAdv)}% adv</span>
-                  <small>{r.avgWr.toFixed(1)}% avg WR</small>
-                </article>
-              ))}
-            </section>
-
-            <section className="panel">
-              <div className="toolbar">
-                <label>
-                  Min matches per matchup{" "}
-                  <select value={minMatches} onChange={(e) => setMinMatches(Number(e.target.value))}>
-                    {[0, 100, 500, 1000, 5000].map((v) => <option key={v} value={v}>{v === 0 ? "any" : `${v}+`}</option>)}
-                  </select>
-                </label>
-                <span className="hint">{sorted.length} heroes</span>
-              </div>
-              <div className="scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th onClick={() => setSortKey("name")}>Hero{arrow("name")}</th>
-                      {sel.enemy.map((id, i) => (
-                        <th key={id} onClick={() => setSortKey(`enemy:${i}`)} title={`Advantage vs ${byId.get(id)?.name}`}>
-                          <img src={img(id)} alt="" /> {byId.get(id)?.name}{arrow(`enemy:${i}`)}
-                        </th>
-                      ))}
-                      <th onClick={() => setSortKey("cumAdv")}>Cumulative adv.{arrow("cumAdv")}</th>
-                      <th onClick={() => setSortKey("avgWr")}>Avg WR{arrow("avgWr")}</th>
-                      <th onClick={() => setSortKey("minMatches")}>Min matches{arrow("minMatches")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sorted.map((r) => <ResultRow key={r.hero.id} row={r} onPick={() => toggle(r.hero.id)} />)}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </>
-        )}
+        {view === "counter" && <CounterView data={data} sel={viewSel} byId={byId} />}
+        {view === "team" && <TeamView data={data} sel={viewSel} byId={byId} filters={filters} setFilters={setFilters} />}
+        {view === "win" && <WinView data={data} sel={viewSel} byId={byId} />}
       </main>
 
       <footer>
-        Data scraped from <a href={data.source}>Dotabuff</a>. Dotabuff publishes matchups across all game modes
-        {MODE === "turbo" ? ", so Turbo numbers are the overall figures; no Turbo-only matchup data is available" : ""}.
-        Not affiliated with Valve or Dotabuff.
+        Hero stats ({MODE === "turbo" ? "Turbo, last 7 days" : "last 7 days"}), roles and lanes are scraped from <a href={data.source}>Dotabuff</a>.
+        Hero-vs-hero matchups are all game modes combined, since Dotabuff doesn't publish them per mode.
+        Win chance is a rough estimate, not a prediction. Not affiliated with Valve or Dotabuff.
       </footer>
     </>
   );
 }
 
-function HeroTile({ hero, state, onClick }: { hero: Hero; state?: Role; onClick: () => void }) {
+type ViewProps = { data: MatchupData; sel: Selection; byId: Map<string, Hero> };
+
+function CounterView({ data, sel, byId }: ViewProps) {
+  const [minMatches, setMinMatches] = useState(100);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "cumAdv", dir: "desc" });
+  const rows = useMemo(() => computeRows(data, sel, minMatches), [data, sel, minMatches]);
+  const sorted = useMemo(() => sortRows(rows, sort.key, sort.dir), [rows, sort]);
+  const top = useMemo(() => sortRows(rows, "cumAdv", "desc").slice(0, 5), [rows]);
+  const setKey = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" }));
+  const arrow = (key: SortKey) => (sort.key === key ? (sort.dir === "desc" ? " ▼" : " ▲") : "");
+
+  if (!sel.enemy.length) return <p className="center hint">Select at least one enemy hero to see counters.</p>;
   return (
-    <button className={`tile ${state ?? ""}`} onClick={onClick} title={`${hero.name} · tier ${hero.tier}`}>
-      <img src={img(hero.id)} alt="" loading="lazy" />
-      <span>{hero.name}</span>
-    </button>
+    <>
+      <section className="top5">
+        {top.map((r, i) => (
+          <article key={r.hero.id} className="card">
+            <span className="rank">#{i + 1}</span>
+            <img src={img(r.hero.id)} alt="" />
+            <b>{r.hero.name}</b>
+            <span className="pos">{sign(r.cumAdv)}% adv</span>
+            <small>{r.avgWr.toFixed(1)}% avg WR</small>
+          </article>
+        ))}
+      </section>
+      <section className="panel">
+        <div className="toolbar">
+          <label>
+            Min matches per matchup{" "}
+            <select value={minMatches} onChange={(e) => setMinMatches(Number(e.target.value))}>
+              {[0, 100, 500, 1000, 5000].map((v) => <option key={v} value={v}>{v === 0 ? "any" : `${v}+`}</option>)}
+            </select>
+          </label>
+          <span className="hint">{sorted.length} heroes</span>
+        </div>
+        <div className="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th onClick={() => setKey("name")}>Hero{arrow("name")}</th>
+                {sel.enemy.map((id, i) => (
+                  <th key={id} onClick={() => setKey(`enemy:${i}`)}>
+                    <img src={img(id)} alt="" /> {byId.get(id)?.name}{arrow(`enemy:${i}`)}
+                  </th>
+                ))}
+                <th onClick={() => setKey("cumAdv")}>Cumulative adv.{arrow("cumAdv")}</th>
+                <th onClick={() => setKey("avgWr")}>Avg WR{arrow("avgWr")}</th>
+                <th onClick={() => setKey("minMatches")}>Min matches{arrow("minMatches")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((r) => (
+                <tr key={r.hero.id}>
+                  <td className="name"><img src={img(r.hero.id)} alt="" /> {r.hero.name}<Tier t={stat(r.hero, MODE).tier ?? "-"} /></td>
+                  {r.perEnemy.map((v, i) => <td key={i} style={{ background: heat(v) }}>{sign(v)}</td>)}
+                  <td className="strong" style={{ background: heat(r.cumAdv / Math.max(1, r.perEnemy.length)) }}>{sign(r.cumAdv)}</td>
+                  <td className={r.avgWr >= 50 ? "pos" : "neg"}>{r.avgWr.toFixed(2)}%</td>
+                  <td className="dim">{r.minMatches.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }
 
-function ResultRow({ row, onPick }: { row: Row; onPick: () => void }) {
+function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filters: Filters; setFilters: (f: Filters) => void }) {
+  const [sort, setSort] = useState<{ key: TeamSortKey; dir: "asc" | "desc" }>({ key: "fit", dir: "desc" });
+  const rows = useMemo(() => teamRows(data, MODE, sel, filters), [data, sel, filters]);
+  const sorted = useMemo(() => sortTeamRows(rows, sort.key, sort.dir), [rows, sort]);
+  const team = [...sel.mine, ...sel.ally].map((id) => byId.get(id)).filter((h): h is Hero => !!h);
+  const missing = missingRoles(team);
+  const setKey = (key: TeamSortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" }));
+  const arrow = (key: TeamSortKey) => (sort.key === key ? (sort.dir === "desc" ? " ▼" : " ▲") : "");
+
   return (
-    <tr>
-      <td className="name">
-        <button className="link" onClick={onPick} title="Add to current selection">
-          <img src={img(row.hero.id)} alt="" /> {row.hero.name}
-        </button>
-        <small className={`tier t${row.hero.tier}`}>{row.hero.tier}</small>
-      </td>
-      {row.perEnemy.map((v, i) => <td key={i} style={{ background: heat(v) }}>{sign(v)}</td>)}
-      <td className="strong" style={{ background: heat(row.cumAdv / Math.max(1, row.perEnemy.length)) }}>{sign(row.cumAdv)}</td>
-      <td className={row.avgWr >= 50 ? "pos" : "neg"}>{row.avgWr.toFixed(2)}%</td>
-      <td className="dim">{row.minMatches.toLocaleString()}</td>
-    </tr>
+    <section className="panel">
+      <FilterPanel f={filters} setF={setFilters} />
+      <p className="hint teamnote">
+        {team.length
+          ? missing.length
+            ? <>Your team still lacks: {missing.map((r) => ROLE_LABELS[r]).join(", ")}.</>
+            : "Your team covers every key role."
+          : "No teammates yet: showing the strongest heroes right now."}
+        {" "}Fit = {MODE_LABEL} win-rate edge + 0.5 per missing role the hero fills.
+      </p>
+      <div className="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onClick={() => setKey("name")}>Hero{arrow("name")}</th>
+              <th onClick={() => setKey("wr")}>{MODE_LABEL} WR{arrow("wr")}</th>
+              <th onClick={() => setKey("pick")}>Pick rate{arrow("pick")}</th>
+              <th>Fills</th>
+              <th onClick={() => setKey("fit")}>Fit{arrow("fit")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.slice(0, 60).map((r) => (
+              <tr key={r.hero.id}>
+                <td className="name">
+                  <img src={img(r.hero.id)} alt="" /> {r.hero.name}<Tier t={r.tier} />
+                  <small className="dim roles-list">{r.hero.roles.map((x) => ROLE_LABELS[x] ?? x).join(" · ")}</small>
+                </td>
+                <td className={r.wr >= 50 ? "pos" : "neg"}>{r.wr.toFixed(2)}%</td>
+                <td className="dim">{r.pick.toFixed(1)}%</td>
+                <td className="fills">{r.fills.map((x) => <span key={x} className="tag">{ROLE_LABELS[x]}</span>)}</td>
+                <td className="strong" style={{ background: heat(r.fit * 2) }}>{sign(r.fit)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!sorted.length && <p className="center hint">No heroes match these filters.</p>}
+        {sorted.length > 60 && <p className="hint">Showing the top 60 of {sorted.length}. Use filters to narrow down.</p>}
+      </div>
+    </section>
+  );
+}
+
+function WinView({ data, sel, byId }: ViewProps) {
+  const mine = [...sel.mine, ...sel.ally];
+  const w = useMemo(() => winChance(data, MODE, mine, sel.enemy), [data, mine.join(), sel.enemy.join()]); // eslint-disable-line
+  if (!w) return <p className="center hint">Pick your hero and/or allies to estimate the win chance.</p>;
+  const full = mine.length === 5 && sel.enemy.length === 5;
+  const line = (ids: string[]) => ids.map((id) => byId.get(id)?.name).join(", ") || "none";
+  return (
+    <section className="panel win">
+      <div className="gauge" style={{ ["--p" as string]: `${w.p}%` }} aria-label={`Win chance ${w.p.toFixed(0)} percent`}>
+        <div className="num">{w.p.toFixed(1)}%</div>
+        <div className="bar"><div /></div>
+        <small className="hint">{full ? "estimated win chance" : "estimated win chance (teams not full yet)"}</small>
+      </div>
+      <ul className="breakdown">
+        <li><span>Hero strength ({MODE_LABEL})</span><b className={w.heroEdge >= 0 ? "pos" : "neg"}>{sign(w.heroEdge)}</b>
+          <small>your avg WR {w.mineWr.toFixed(1)}%{w.enemyWr != null ? ` vs enemy ${w.enemyWr.toFixed(1)}%` : " vs an average team"}</small></li>
+        <li><span>Matchups</span><b className={w.matchupEdge >= 0 ? "pos" : "neg"}>{sign(w.matchupEdge)}</b>
+          <small>{sel.enemy.length ? "how your heroes fare against theirs (all modes)" : "add enemies to include this"}</small></li>
+      </ul>
+      <p className="hint">Your team: {line(mine)}<br />Enemies: {line(sel.enemy)}</p>
+      <p className="hint">Averages of Dotabuff hero win rates plus pairwise advantage. It ignores players, items and teamwork, so treat it as a rough guide.</p>
+    </section>
   );
 }
