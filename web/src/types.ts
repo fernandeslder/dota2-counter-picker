@@ -52,6 +52,7 @@ export interface TeamRow {
   tier: string;
   fills: string[];
   fillsLane: string | null;
+  partner: boolean;
   perEnemy: number[];
   vsEnemies: number | null;
   fit: number;

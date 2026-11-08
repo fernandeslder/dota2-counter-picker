@@ -53,7 +53,7 @@ describe("team builder", () => {
     const b = rows.find((r) => r.hero.id === "b")!;
     expect(b.wr).toBe(53); // turbo = base + 1
     expect(b.fills).toEqual(["Support", "Disabler"]);
-    expect(b.fit).toBeCloseTo(3 + 1, 5);
+    expect(b.fit).toBeCloseTo(3 + 1 + 0.5, 5); // + lane partner for core "a"
     expect(rows.map((r) => r.hero.id).sort()).toEqual(["b", "c"]);
   });
   it("adds average advantage vs known enemies", () => {
@@ -65,6 +65,10 @@ describe("team builder", () => {
     // a vs c has only 50 matches, so its -2 doesn't count
     const r = teamRows(data, "normal", sel({ enemy: ["c"] }), emptyFilters()).find((x) => x.hero.id === "a")!;
     expect(r.vsEnemies).toBe(0);
+  });
+  it("flags a support as lane partner for my core's lane", () => {
+    const r = teamRows(data, "normal", sel({ mine: ["a"] }), emptyFilters()).find((x) => x.hero.id === "b")!;
+    expect(r.partner).toBe(true); // a is a Safe Lane core; b is a support with 70% Safe Lane
   });
   it("rewards heroes whose main lane the team doesn't cover yet", () => {
     const r = teamRows(data, "normal", sel({ ally: ["a"] }), emptyFilters()).find((x) => x.hero.id === "c")!;

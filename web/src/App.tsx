@@ -197,6 +197,7 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
   const sorted = useMemo(() => sortTeamRows(rows, sort.key, sort.dir), [rows, sort]);
   const team = [...sel.mine, ...sel.ally].map((id) => byId.get(id)).filter((h): h is Hero => !!h);
   const missing = missingRoles(team);
+  const mine = byId.get(sel.mine[0]);
   const setKey = (key: TeamSortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" }));
   const arrow = (key: TeamSortKey) => (sort.key === key ? (sort.dir === "desc" ? " ▼" : " ▲") : "");
@@ -205,13 +206,14 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
     <section className="panel">
       <FilterPanel f={filters} setF={setFilters} />
       <p className="hint teamnote">
+        {mine && <><b>Suggestions for your teammates, given you're playing {mine.name}.</b>{" "}</>}
         {team.length
           ? missing.length
             ? <>Your team still lacks: {missing.map((r) => ROLE_LABELS[r]).join(", ")}.</>
             : "Your team covers every key role."
           : "No teammates yet: showing the strongest heroes right now."}
-        {" "}Fit = {MODE_LABEL} win-rate edge{sel.enemy.length ? " + average advantage vs the enemies" : ""} + 0.5 per missing role
-        and 0.5 per open lane the hero fills (synergy). Dotabuff has no hero-with-hero data, so synergy is role and lane coverage.
+        {" "}Fit = {MODE_LABEL} win-rate edge{sel.enemy.length ? " + average advantage vs the enemies" : ""} + 0.5 per missing role,
+        open lane, or lane partnership (support for your core) the hero fills (synergy). Dotabuff has no hero-with-hero data, so synergy is role and lane coverage.
       </p>
       <div className="scroll">
         <table>
@@ -239,6 +241,7 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
                 <td className="dim">{r.pick.toFixed(1)}%</td>
                 <td className="fills">
                   {r.fills.map((x) => <span key={x} className="tag">{ROLE_LABELS[x]}</span>)}
+                  {r.partner && <span className="tag">Lane partner</span>}
                   {r.fillsLane && <span className="tag">{r.fillsLane}</span>}
                 </td>
                 <td className="strong" style={{ background: heat(r.fit * 2) }}>{sign(r.fit)}</td>

@@ -96,11 +96,15 @@ export function teamRows(data: MatchupData, mode: Mode, sel: Selection, f: Filte
     const fills = missing.filter((r) => hero.roles.includes(r));
     const lane = mainLane(hero);
     const fillsLane = lane && openLanes.includes(lane) && team.length > 0 ? lane : null;
+    // lane partner: a support who also plays the lane my pick (a core) is in
+    const myLane = sel.mine.length ? mainLane(byId.get(sel.mine[0])!) : null;
+    const partner = !!myLane && ["Safe Lane", "Off Lane"].includes(myLane) && isSupport(hero) &&
+      !isSupport(byId.get(sel.mine[0])!) && (hero.lanes[myLane] ?? 0) >= 25;
     const perEnemy = enemies.map((e) => (data.n[c][e] >= MIN_MATCHUP_N ? data.adv[c][e] : 0));
     const vs = perEnemy.length ? perEnemy.reduce((a, b) => a + b, 0) / perEnemy.length : null;
     rows.push({
-      hero, index: c, wr: s.wr, pick: s.pick ?? 0, tier: s.tier ?? "-", fills, fillsLane, perEnemy, vsEnemies: vs,
-      fit: s.wr - 50 + (vs ?? 0) + FILL_BONUS * fills.length + (fillsLane ? LANE_BONUS : 0),
+      hero, index: c, wr: s.wr, pick: s.pick ?? 0, tier: s.tier ?? "-", fills, fillsLane, partner, perEnemy, vsEnemies: vs,
+      fit: s.wr - 50 + (vs ?? 0) + FILL_BONUS * fills.length + (fillsLane ? LANE_BONUS : 0) + (partner ? LANE_BONUS : 0),
     });
   });
   return rows;
