@@ -82,6 +82,7 @@ export function teamRows(data: MatchupData, mode: Mode, sel: Selection, f: Filte
   const byId = new Map(data.heroes.map((h) => [h.id, h]));
   const idx = idxMap(data);
   const team = [...sel.mine, ...sel.ally].map((id) => byId.get(id)).filter((h): h is Hero => !!h);
+  const teamIdx = team.map((h) => idx.get(h.id)!);
   const missing = missingRoles(team);
   const covered = new Set(team.map(mainLane));
   const openLanes = CORE_LANES.filter((l) => !covered.has(l));
@@ -100,17 +101,18 @@ export function teamRows(data: MatchupData, mode: Mode, sel: Selection, f: Filte
     const myLane = sel.mine.length ? mainLane(byId.get(sel.mine[0])!) : null;
     const partner = !!myLane && ["Safe Lane", "Off Lane"].includes(myLane) && isSupport(hero) &&
       !isSupport(byId.get(sel.mine[0])!) && (hero.lanes[myLane] ?? 0) >= 25;
+    const synergy = data.syn && teamIdx.length ? teamIdx.reduce((a, t) => a + data.syn![c][t], 0) / teamIdx.length : null;
     const perEnemy = enemies.map((e) => (data.n[c][e] >= MIN_MATCHUP_N ? data.adv[c][e] : 0));
     const vs = perEnemy.length ? perEnemy.reduce((a, b) => a + b, 0) / perEnemy.length : null;
     rows.push({
-      hero, index: c, wr: s.wr, pick: s.pick ?? 0, tier: s.tier ?? "-", fills, fillsLane, partner, perEnemy, vsEnemies: vs,
-      fit: s.wr - 50 + (vs ?? 0) + FILL_BONUS * fills.length + (fillsLane ? LANE_BONUS : 0) + (partner ? LANE_BONUS : 0),
+      hero, index: c, wr: s.wr, pick: s.pick ?? 0, tier: s.tier ?? "-", fills, fillsLane, partner, synergy, perEnemy, vsEnemies: vs,
+      fit: s.wr - 50 + (vs ?? 0) + (synergy ?? 0) + FILL_BONUS * fills.length + (fillsLane ? LANE_BONUS : 0) + (partner ? LANE_BONUS : 0),
     });
   });
   return rows;
 }
 
-export type TeamSortKey = "fit" | "wr" | "pick" | "vsEnemies" | "name";
+export type TeamSortKey = "fit" | "wr" | "pick" | "vsEnemies" | "synergy" | "name";
 export function sortTeamRows(rows: TeamRow[], key: TeamSortKey, dir: "asc" | "desc"): TeamRow[] {
   const sign = dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) =>
@@ -123,13 +125,15 @@ export interface WinChance {
   p: number;
   heroEdge: number;
   matchupEdge: number;
+  /** my team's average pairwise synergy minus the enemy team's (pp) */
+  synEdge: number;
   mineWr: number;
   enemyWr: number | null;
 }
 
 /**
  * Rough estimate, deliberately conservative (averages, not sums):
- *   p = 50 + (avg hero WR edge of my team - avg of enemy team) + (avg matchup edge)
+ *   p = 50 + (avg hero WR edge of my team - avg of enemy team) + (avg matchup edge) + (avg pair synergy mine - theirs)
  * Hero win rates come from the active game mode; matchups are all-modes and ~antisymmetric,
  * so the net matchup edge is half the difference of both sides' average advantage.
  */
@@ -150,8 +154,15 @@ export function winChance(data: MatchupData, mode: Mode, mine: string[], enemy: 
     const aEnemy = avg(e.map((j) => avg(m.map((i) => data.adv[j][i]))));
     matchupEdge = (aMine - aEnemy) / 2;
   }
-  const p = Math.min(95, Math.max(5, 50 + heroEdge + matchupEdge));
-  return { p, heroEdge, matchupEdge, mineWr, enemyWr };
+  const pairAvg = (xs: number[]) => {
+    if (!data.syn || xs.length < 2) return 0;
+    let s = 0, k = 0;
+    for (let i = 0; i < xs.length; i++) for (let j = i + 1; j < xs.length; j++) { s += data.syn[xs[i]][xs[j]]; k++; }
+    return s / k;
+  };
+  const synEdge = pairAvg(m) - pairAvg(e);
+  const p = Math.min(95, Math.max(5, 50 + heroEdge + matchupEdge + synEdge));
+  return { p, heroEdge, matchupEdge, synEdge, mineWr, enemyWr };
 }
 
 // ---------- URL state: #v=team&m=a&a=b,c&e=d&b=x ----------

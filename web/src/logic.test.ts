@@ -19,6 +19,8 @@ const data: MatchupData = {
   adv: [[0, 1, -2], [3, 0, 4], [-1, 2, 0]],
   wr: [[50, 51, 49], [53, 50, 54], [48, 52, 50]],
   n: [[0, 900, 50], [800, 0, 700], [600, 500, 0]],
+  syn: [[0, 1.5, -1], [1.5, 0, 2], [-1, 2, 0]],
+  synN: [[0, 900, 900], [900, 0, 900], [900, 900, 0]],
 };
 const sel = (o: Partial<ReturnType<typeof emptySelection>>) => ({ ...emptySelection(), ...o });
 
@@ -53,12 +55,17 @@ describe("team builder", () => {
     const b = rows.find((r) => r.hero.id === "b")!;
     expect(b.wr).toBe(53); // turbo = base + 1
     expect(b.fills).toEqual(["Support", "Disabler"]);
-    expect(b.fit).toBeCloseTo(3 + 1 + 0.5, 5); // + lane partner for core "a"
+    expect(b.fit).toBeCloseTo(3 + 1 + 0.5 + 1.5, 5); // + lane partner for core "a" + synergy a-b
     expect(rows.map((r) => r.hero.id).sort()).toEqual(["b", "c"]);
   });
   it("adds average advantage vs known enemies", () => {
     const rows = teamRows(data, "normal", sel({ mine: ["a"], enemy: ["c"] }), emptyFilters());
     expect(rows.find((r) => r.hero.id === "b")!.vsEnemies).toBe(4);
+  });
+  it("adds average synergy with the chosen teammates to the fit", () => {
+    const r = teamRows(data, "normal", sel({ ally: ["a", "b"] }), emptyFilters()).find((x) => x.hero.id === "c")!;
+    expect(r.synergy).toBeCloseTo((-1 + 2) / 2, 5);
+    expect(teamRows(data, "normal", emptySelection(), emptyFilters())[0].synergy).toBeNull();
   });
   it("works with no enemies, and ignores low-sample matchups", () => {
     expect(teamRows(data, "normal", emptySelection(), emptyFilters()).every((r) => r.vsEnemies === null)).toBe(true);
@@ -85,6 +92,10 @@ describe("winChance", () => {
     expect(w.heroEdge).toBe(2); // 52 vs 50
     expect(w.matchupEdge).toBe((3 - 1) / 2); // b vs a = 3, a vs b = 1
     expect(w.p).toBe(53);
+  });
+  it("adds my team's pair synergy minus the enemy's", () => {
+    const w = winChance(data, "normal", ["a", "b"], ["c"])!;
+    expect(w.synEdge).toBeCloseTo(1.5, 5); // mine: a-b 1.5; enemy has one hero, so 0
   });
   it("uses the mode's win rates and clamps", () => {
     expect(winChance(data, "turbo", ["b"], [])!.p).toBe(53);

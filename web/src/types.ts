@@ -25,6 +25,10 @@ export interface MatchupData {
   adv: number[][];
   wr: number[][];
   n: number[][];
+  /** same-team synergy in win-rate percentage points, [a][b] symmetric; synN = matches behind it */
+  syn?: number[][];
+  synN?: number[][];
+  synergySources?: { stratz?: string; d2pt?: string; agreement?: number };
 }
 
 export type Role = "enemy" | "ally" | "mine" | "ban";
@@ -53,6 +57,8 @@ export interface TeamRow {
   tier: string;
   fills: string[];
   fillsLane: string | null;
+  /** average same-team synergy (pp) with the chosen teammates; null when no teammates or no data */
+  synergy: number | null;
   partner: boolean;
   perEnemy: number[];
   vsEnemies: number | null;

@@ -15,6 +15,8 @@ Matrix convention (all indexed [counter][enemy], hero indices follow `heroes`):
   n[c][e]    matches played in that matchup
 """
 import json, os, re, sys, time
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import synergy
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -180,6 +182,13 @@ def main():
             "stats": {"normal": stat(h), "turbo": stat(t) if t else stat(h)},
         })
 
+    syn = synergy.build(session, [h["name"] for h in normal])
+    if syn is None and OUT.exists():  # keep the last good synergy rather than dropping it
+        old = json.loads(OUT.read_text())
+        if "syn" in old:
+            syn = (old["syn"], old["synN"], old.get("synergySources", {}))
+            print("synergy: sources unavailable, kept previous synergy data", file=sys.stderr)
+
     data = {
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "patch": patch,
@@ -188,6 +197,7 @@ def main():
         "adv": [[round(v, 2) for v in r] for r in adv],
         "wr": [[round(v, 2) for v in r] for r in wr],
         "n": n,
+        **({"syn": syn[0], "synN": syn[1], "synergySources": syn[2]} if syn else {}),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, separators=(",", ":")))

@@ -2,7 +2,7 @@
 
 Two tools. Turbo has no enemy/ban selection in the builder, since every Turbo pick is blind:
 
-- **Pick helper / Team builder**: add your pick and allies; heroes are ranked by the mode's win rate plus a synergy bonus for roles and lanes your team still lacks. On Classic you can also add enemies (and bans) to rank by counters, with a per-enemy advantage column. Everything is optional. Filter by position (core/support), multiple roles at once (any/all), lane and attribute. Dotabuff has no hero-with-hero data, so synergy is role and lane coverage only.
+- **Pick helper / Team builder**: add your pick and allies; heroes are ranked by the mode's win rate plus a synergy bonus for roles and lanes your team still lacks. On Classic you can also add enemies (and bans) to rank by counters, with a per-enemy advantage column. Everything is optional. Filter by position (core/support), multiple roles at once (any/all), lane and attribute. Same-team **synergy** (win-rate change when two heroes are on one team) comes from Stratz (needs a free token in `~/.config/d2counter/stratz_token`, ranked pubs since the latest game version) combined with Dota2ProTracker's pub-mode pair stats; each pair is shrunk toward 0 by a prior weight estimated from how much the two sources agree. Role/lane coverage is a small extra bonus.
 - **Win chance**: fill both teams for a rough win-probability estimate from hero win rates and pairwise matchups.
 
 All numbers are from the **current patch only** (auto-detected by the scraper).

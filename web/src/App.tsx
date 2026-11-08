@@ -182,7 +182,7 @@ export default function App() {
 
       <footer>
         All numbers are from the current patch{data.patch ? ` (${data.patch})` : ""} only: {MODE === "turbo" ? "Turbo " : ""}hero stats, roles and lanes scraped from <a href={data.source}>Dotabuff</a>.
-        Hero-vs-hero matchups are all game modes combined, since Dotabuff doesn't publish them per mode.
+        Hero-vs-hero matchups are all game modes combined, since Dotabuff doesn't publish them per mode. Same-team synergy combines pub matches from <a href="https://stratz.com">Stratz</a>{data.synergySources?.stratz ? ` (since ${data.synergySources.stratz})` : ""} and <a href="https://www.dota2protracker.com/combos">Dota2ProTracker</a>.
         Win chance is a rough estimate, not a prediction. Not affiliated with Valve or Dotabuff.
       </footer>
     </>
@@ -212,8 +212,8 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
             ? <>Your team still lacks: {missing.map((r) => ROLE_LABELS[r]).join(", ")}.</>
             : "Your team covers every key role."
           : "No teammates yet: showing the strongest heroes right now."}
-        {" "}Fit = {MODE_LABEL} win-rate edge{sel.enemy.length ? " + average advantage vs the enemies" : ""} + 0.5 per missing role,
-        open lane, or lane partnership (support for your core) the hero fills (synergy). Dotabuff has no hero-with-hero data, so synergy is role and lane coverage.
+        {" "}Fit = {MODE_LABEL} win-rate edge{sel.enemy.length ? " + average advantage vs the enemies" : ""} + average pair synergy with your team (how much the win rate changes when they're on the same team, from Stratz and Dota2ProTracker)
+        + 0.5 per missing role, open lane or lane partnership the hero fills.
       </p>
       <div className="scroll">
         <table>
@@ -221,6 +221,7 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
             <tr>
               <th onClick={() => setKey("name")}>Hero{arrow("name")}</th>
               {sel.enemy.map((id) => <th key={id}><img src={img(id)} alt="" /> {byId.get(id)?.name}</th>)}
+              {team.length > 0 && data.syn && <th onClick={() => setKey("synergy")}>Synergy{arrow("synergy")}</th>}
               {sel.enemy.length > 0 && <th onClick={() => setKey("vsEnemies")}>vs avg{arrow("vsEnemies")}</th>}
               <th onClick={() => setKey("wr")}>{MODE_LABEL} WR{arrow("wr")}</th>
               <th onClick={() => setKey("pick")}>Pick rate{arrow("pick")}</th>
@@ -235,6 +236,7 @@ function TeamView({ data, sel, byId, filters, setFilters }: ViewProps & { filter
                   <img src={img(r.hero.id)} alt="" /> {r.hero.name}<Tier t={r.tier} />
                   <small className="dim roles-list">{r.hero.roles.map((x) => ROLE_LABELS[x] ?? x).join(" · ")}</small>
                 </td>
+                {team.length > 0 && data.syn && <td className="strong" style={{ background: heat((r.synergy ?? 0) * 2) }}>{sign(r.synergy ?? 0)}</td>}
                 {r.perEnemy.map((v, i) => <td key={i} style={{ background: heat(v) }}>{sign(v)}</td>)}
                 {r.vsEnemies != null && <td className="strong" style={{ background: heat(r.vsEnemies) }}>{sign(r.vsEnemies)}</td>}
                 <td className={r.wr >= 50 ? "pos" : "neg"}>{r.wr.toFixed(2)}%</td>
@@ -272,6 +274,8 @@ function WinView({ data, sel, byId }: ViewProps) {
       <ul className="breakdown">
         <li><span>Hero strength ({MODE_LABEL})</span><b className={w.heroEdge >= 0 ? "pos" : "neg"}>{sign(w.heroEdge)}</b>
           <small>your avg WR {w.mineWr.toFixed(1)}%{w.enemyWr != null ? ` vs enemy ${w.enemyWr.toFixed(1)}%` : " vs an average team"}</small></li>
+        <li><span>Synergy</span><b className={w.synEdge >= 0 ? "pos" : "neg"}>{sign(w.synEdge)}</b>
+          <small>how well each team's heroes work together (pair win rates)</small></li>
         <li><span>Matchups</span><b className={w.matchupEdge >= 0 ? "pos" : "neg"}>{sign(w.matchupEdge)}</b>
           <small>{sel.enemy.length ? "how your heroes fare against theirs (all modes)" : "add enemies to include this"}</small></li>
       </ul>
