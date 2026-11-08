@@ -28,6 +28,8 @@ export interface MatchupData {
   /** same-team synergy in win-rate percentage points, [a][b] symmetric; synN = matches behind it */
   syn?: number[][];
   synN?: number[][];
+  /** safe/off-lane duos: [heroA, heroB, matches, wins, lanesWon, lanesDrawn, lanesLost] (hero indices) */
+  lanePairs?: number[][];
   synergySources?: { stratz?: string; d2pt?: string; agreement?: number };
 }
 
@@ -63,4 +65,17 @@ export interface TeamRow {
   perEnemy: number[];
   vsEnemies: number | null;
   fit: number;
+}
+
+export interface LanePartner {
+  hero: Hero;
+  games: number;
+  /** match win rate of the duo, % */
+  wr: number;
+  /** % of games the duo won / drew / lost its lane */
+  won: number;
+  drawn: number;
+  lost: number;
+  /** lane won minus lane lost (pp), shrunk toward 0 for small samples; the ranking key */
+  score: number;
 }

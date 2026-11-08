@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MODE, OTHER_URL, SITE, VIEWS } from "./config";
 import {
-  LIMITS, ROLE_LABELS, decodeHash, emptyFilters, emptySelection, encodeHash, missingRoles,
+  LIMITS, ROLE_LABELS, decodeHash, lanePartners, emptyFilters, emptySelection, encodeHash, missingRoles,
   sortTeamRows, teamRows, winChance, type TeamSortKey,
 } from "./logic";
-import { FilterPanel, HeroGrid, SelectionBar, Tier, img, sign } from "./parts";
+import { FilterPanel, HeroGrid, SelectionBar, SidePanel, Tier, img, sign } from "./parts";
 import type { Filters, Hero, MatchupData, Role, Selection, View } from "./types";
 
 const VIEW_ROLES: Record<View, Role[]> = {
@@ -37,6 +37,17 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const search = useRef<HTMLInputElement>(null);
+  const [sideOpen, setSideOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("d2cp-side");
+      if (saved) return saved === "1";
+    } catch { /* storage unavailable */ }
+    return typeof matchMedia === "function" && matchMedia("(min-width: 1300px)").matches;
+  });
+  const toggleSide = (v: boolean) => {
+    setSideOpen(v);
+    try { localStorage.setItem("d2cp-side", v ? "1" : "0"); } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     document.title = SITE.title;
@@ -114,6 +125,17 @@ export default function App() {
       return n;
     });
 
+  const takenAll = useMemo(() => new Set([...sel.enemy, ...sel.ally, ...sel.mine, ...sel.ban]), [sel]);
+  const laneCards = useMemo(() => {
+    if (!data) return [];
+    return [...sel.mine, ...sel.ally]
+      .map((id) => byId.get(id))
+      .filter((h): h is Hero => !!h)
+      .map((hero) => ({ hero, partners: lanePartners(data, hero.id, takenAll, 5) }));
+  }, [data, sel, byId, takenAll]);
+  const addAlly = (id: string) =>
+    setSel((s) => (s.ally.length >= LIMITS.ally || takenAll.has(id) ? s : { ...s, ally: [...s.ally, id] }));
+
   const heroes = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (data?.heroes ?? []).filter((h) => !q || h.name.toLowerCase().includes(q));
@@ -150,8 +172,8 @@ export default function App() {
         ))}
       </nav>
 
-      <main>
-        <section className="panel">
+      <main className={`layout ${sideOpen ? "side-open" : ""}`}>
+        <section className="panel picker">
           <SelectionBar
             roles={roles} role={role} setRole={setRole} sel={sel} byId={byId}
             onRemove={(id) => setSel((s) => {
@@ -176,9 +198,20 @@ export default function App() {
           <HeroGrid heroes={heroes} taken={taken} onPick={pick} query={query} />
         </section>
 
+        <div className="results">
         {view === "team" && <TeamView data={data} sel={viewSel} byId={byId} filters={filters} setFilters={setFilters} />}
         {view === "win" && <WinView data={data} sel={viewSel} byId={byId} />}
+        </div>
+        <SidePanel
+          open={sideOpen} onClose={() => toggleSide(false)} cards={laneCards} hasData={!!data.lanePairs}
+          onAdd={addAlly} canAdd={sel.ally.length < LIMITS.ally}
+        />
       </main>
+      <button className={`side-tab ${sideOpen ? "open" : ""}`} onClick={() => toggleSide(!sideOpen)} aria-expanded={sideOpen}>
+        <span>{sideOpen ? "Lane partners ›" : "‹ Lane partners"}</span>
+        {laneCards.length > 0 && <b>{laneCards.length}</b>}
+      </button>
+      {sideOpen && <div className="side-backdrop" onClick={() => toggleSide(false)} />}
 
       <footer>
         All numbers are from the current patch{data.patch ? ` (${data.patch})` : ""} only: {MODE === "turbo" ? "Turbo " : ""}hero stats, roles and lanes scraped from <a href={data.source}>Dotabuff</a>.

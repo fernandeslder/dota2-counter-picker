@@ -1,5 +1,5 @@
 import type { Mode } from "./config";
-import type { Filters, Hero, MatchupData, Role, Selection, Stat, TeamRow, View } from "./types";
+import type { Filters, Hero, MatchupData, LanePartner, Role, Selection, Stat, TeamRow, View } from "./types";
 
 export const LIMITS: Record<Role, number> = { enemy: 5, ally: 4, mine: 1, ban: 12 };
 
@@ -117,6 +117,34 @@ export function sortTeamRows(rows: TeamRow[], key: TeamSortKey, dir: "asc" | "de
   const sign = dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) =>
     key === "name" ? a.hero.name.localeCompare(b.hero.name) * sign : ((a[key] ?? 0) - (b[key] ?? 0)) * sign);
+}
+
+// ---------- lane partners (side panel) ----------
+
+export const MIN_LANE_GAMES = 25; // duos below this only show up if a hero has too few well-sampled partners
+export const LANE_SHRINK = 30; // lanes of prior weight toward a 0 margin
+
+/** Best safe/off-lane duo partners for one hero, ranked by (lanes won - lanes lost), shrunk for small samples. */
+export function lanePartners(data: MatchupData, heroId: string, exclude: Set<string>, k = 5): LanePartner[] {
+  const idx = data.heroes.findIndex((h) => h.id === heroId);
+  if (idx < 0 || !data.lanePairs) return [];
+  const out: LanePartner[] = [];
+  for (const [a, b, n, wins, lw, ld, ll] of data.lanePairs) {
+    if (a !== idx && b !== idx) continue;
+    const hero = data.heroes[a === idx ? b : a];
+    const lanes = lw + ld + ll;
+    if (!hero || exclude.has(hero.id) || !n || !lanes) continue;
+    out.push({
+      hero, games: n, wr: (100 * wins) / n,
+      won: (100 * lw) / lanes, drawn: (100 * ld) / lanes, lost: (100 * ll) / lanes,
+      score: (100 * (lw - ll)) / (lanes + LANE_SHRINK),
+    });
+  }
+  // prefer duos with a real sample; only fall back to thin ones if there aren't enough
+  const byScore = (x: LanePartner, y: LanePartner) => y.score - x.score;
+  const solid = out.filter((p) => p.games >= MIN_LANE_GAMES).sort(byScore);
+  const thin = out.filter((p) => p.games < MIN_LANE_GAMES).sort(byScore);
+  return [...solid, ...thin].slice(0, k);
 }
 
 // ---------- win chance ----------

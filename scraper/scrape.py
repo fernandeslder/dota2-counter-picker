@@ -189,6 +189,12 @@ def main():
             syn = (old["syn"], old["synN"], old.get("synergySources", {}))
             print("synergy: sources unavailable, kept previous synergy data", file=sys.stderr)
 
+    try:
+        lanes = synergy.lane_pairs(session, [h["name"] for h in normal])
+    except Exception as e:
+        print(f"lane pairs failed: {e}", file=sys.stderr)
+        lanes = json.loads(OUT.read_text()).get("lanePairs") if OUT.exists() else None
+
     data = {
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "patch": patch,
@@ -197,6 +203,7 @@ def main():
         "adv": [[round(v, 2) for v in r] for r in adv],
         "wr": [[round(v, 2) for v in r] for r in wr],
         "n": n,
+        **({"lanePairs": lanes} if lanes else {}),
         **({"syn": syn[0], "synN": syn[1], "synergySources": syn[2]} if syn else {}),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

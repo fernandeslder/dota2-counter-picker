@@ -99,6 +99,36 @@ def d2pt(session, hero_names, names):
     return pairs
 
 
+def lane_pairs(session, hero_names):
+    """Safe-lane (pos 1+5) and off-lane (pos 3+4) duos from D2PT pub mode, merged per unordered hero pair.
+    -> [[a, b, matches, wins, lanes_won, lanes_drawn, lanes_lost], ...] indexed like `heroes`."""
+    names = {norm(n): i for i, n in enumerate(hero_names)}
+    session.get(f"{D2PT}/combos?mode=pub", timeout=60)
+    hdr = {"Referer": f"{D2PT}/combos", "Accept": "application/json", "Sec-Fetch-Site": "same-origin",
+           "Sec-Fetch-Mode": "cors", "X-Requested-With": "XMLHttpRequest"}
+    lst = session.get(f"{D2PT}/api/heroes/list", timeout=60, headers=hdr).json()
+    lst = lst if isinstance(lst, list) else lst.get("heroes") or lst.get("data") or []
+    did = {}
+    for h in lst:
+        i = names.get(norm(h.get("displayName") or h.get("name") or h.get("hero_name") or ""))
+        if i is not None:
+            did[h.get("hero_id") or h.get("id")] = i
+    url = f"{D2PT}/api/lane-pairs/stats?mode=pub&min_matches_pub=10&limit=10000&sort_by=num_matches&sort_order=desc"
+    rows = session.get(url, timeout=90, headers=hdr).json()
+    ok = {("pos 1", "pos 5"), ("pos 5", "pos 1"), ("pos 3", "pos 4"), ("pos 4", "pos 3")}
+    agg = {}
+    for r in rows if isinstance(rows, list) else []:
+        a, b = did.get(r["hero_id_1"]), did.get(r["hero_id_2"])
+        if a is None or b is None or a == b or (r["position_1"], r["position_2"]) not in ok:
+            continue
+        k = (min(a, b), max(a, b))
+        v = agg.setdefault(k, [0, 0, 0, 0, 0])
+        for j, f in enumerate(("num_matches", "wins", "lanes_won", "lanes_drawn", "lanes_lost")):
+            v[j] += int(r.get(f) or 0)
+    print(f"lane pairs: {len(agg)} duos", flush=True)
+    return [[a, b, *v] for (a, b), v in sorted(agg.items())]
+
+
 def combine(sources, N, shrink=SHRINK):
     """sources: list of (raw delta, n). Per source the two directions are averaged (same games),
     then pooled: syn = sum(n_i * delta_i) / (sum(n_i) + shrink), i.e. shrunk toward 0 by `shrink` games."""

@@ -1,5 +1,5 @@
 import { ATTRS, LANES, LIMITS, ROLE_LABELS, ROLE_ORDER, filtersActive, emptyFilters } from "./logic";
-import type { Filters, Hero, Role, Selection } from "./types";
+import type { Filters, Hero, LanePartner, Role, Selection } from "./types";
 
 export const img = (id: string) => `/heroes/${id}.jpg`;
 export const sign = (v: number) => (v > 0 ? "+" : "") + v.toFixed(2);
@@ -98,4 +98,45 @@ export function FilterPanel({ f, setF }: { f: Filters; setF: (f: Filters) => voi
 
 export function Tier({ t }: { t: string }) {
   return <small className={`tier t${t}`}>{t}</small>;
+}
+
+export function SidePanel({
+  open, onClose, cards, hasData, onAdd, canAdd,
+}: {
+  open: boolean; onClose: () => void; hasData: boolean; canAdd: boolean; onAdd: (id: string) => void;
+  cards: { hero: Hero; partners: LanePartner[] }[];
+}) {
+  return (
+    <aside className={`side ${open ? "open" : ""}`} aria-label="Best lane partners" aria-hidden={!open}>
+      <div className="side-head">
+        <h2>Best lane partners</h2>
+        <button className="ghost small" onClick={onClose} aria-label="Close lane partners">Close ✕</button>
+      </div>
+      {!hasData && <p className="hint">No lane data in this build yet.</p>}
+      {hasData && !cards.length && <p className="hint">Pick your hero or allies to see their top 5 safe-lane / off-lane partners.</p>}
+      {cards.map(({ hero, partners }) => (
+        <section key={hero.id} className="lcard">
+          <h3><img src={img(hero.id)} alt="" /> {hero.name}</h3>
+          {!partners.length && <p className="hint">Not enough lane games for this hero.</p>}
+          <ol>
+            {partners.map((p) => (
+              <li key={p.hero.id}>
+                <button className="lp" onClick={() => onAdd(p.hero.id)} disabled={!canAdd} title={canAdd ? `Add ${p.hero.name} as an ally` : p.hero.name}>
+                  <img src={img(p.hero.id)} alt="" />
+                  <span className="lp-name">{p.hero.name}</span>
+                  <b className={p.score >= 0 ? "pos" : "neg"}>{sign(p.score)}%</b>
+                  <small>
+                    won {p.won.toFixed(0)}% · lost {p.lost.toFixed(0)}% · {p.wr.toFixed(1)}% WR · {p.games.toLocaleString()} games
+                  </small>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+      <p className="hint">
+        Safe-lane (carry + support) and off-lane (offlaner + support) duos from Dota2ProTracker pub games. Ranked by lanes won minus lanes lost, shrunk for small samples. Click one to add it as an ally.
+      </p>
+    </aside>
+  );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  decodeHash, emptyFilters, emptySelection, encodeHash, heroMatches, missingRoles,
+  decodeHash, lanePartners, emptyFilters, emptySelection, encodeHash, heroMatches, missingRoles,
   teamRows, winChance,
 } from "./logic";
 import type { Hero, MatchupData } from "./types";
@@ -20,6 +20,7 @@ const data: MatchupData = {
   wr: [[50, 51, 49], [53, 50, 54], [48, 52, 50]],
   n: [[0, 900, 50], [800, 0, 700], [600, 500, 0]],
   syn: [[0, 1.5, -1], [1.5, 0, 2], [-1, 2, 0]],
+  lanePairs: [[0, 1, 100, 60, 50, 30, 20], [0, 2, 400, 200, 100, 200, 100], [1, 2, 50, 30, 20, 20, 10]],
   synN: [[0, 900, 900], [900, 0, 900], [900, 900, 0]],
 };
 const sel = (o: Partial<ReturnType<typeof emptySelection>>) => ({ ...emptySelection(), ...o });
@@ -101,6 +102,18 @@ describe("winChance", () => {
     expect(winChance(data, "turbo", ["b"], [])!.p).toBe(53);
     const big = { ...data, adv: [[0, 90, 0], [90, 0, 0], [0, 0, 0]] };
     expect(winChance(big, "normal", ["a"], ["b"])!.p).toBeLessThanOrEqual(95);
+  });
+});
+
+describe("lanePartners", () => {
+  it("ranks duo partners by shrunk lane margin and honours exclusions", () => {
+    const r = lanePartners(data, "a", new Set(), 5);
+    expect(r.map((x) => x.hero.id)).toEqual(["b", "c"]); // b: +30 lane margin, c: 0
+    expect(r[0].games).toBe(100);
+    expect(r[0].wr).toBe(60);
+    expect(r[0].score).toBeCloseTo((100 * 30) / (100 + 30), 5);
+    expect(lanePartners(data, "a", new Set(["b"]), 5).map((x) => x.hero.id)).toEqual(["c"]);
+    expect(lanePartners(data, "zzz", new Set())).toEqual([]);
   });
 });
 
