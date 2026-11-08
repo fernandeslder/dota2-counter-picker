@@ -1,1 +1,0 @@
-web: gunicorn -w 4 -k sync --worker-connections 1000 --timeout 1000 app:app

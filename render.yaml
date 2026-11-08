@@ -1,0 +1,33 @@
+# Two free Render static sites (no cold starts) built from the same repo.
+# Pushing refreshed data (see .github/workflows/scrape.yml) redeploys both.
+services:
+  - type: web
+    name: d2counter
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - { key: VITE_MODE, value: normal }
+      - { key: VITE_OTHER_URL, value: https://turbo.d2counter.lder.fyi }
+    headers:
+      - { path: /data/*, name: Cache-Control, value: "public, max-age=300" }
+      - { path: /sw.js, name: Cache-Control, value: "no-cache" }
+      - { path: /heroes/*, name: Cache-Control, value: "public, max-age=604800" }
+    routes:
+      - { type: rewrite, source: /*, destination: /index.html }
+  - type: web
+    name: d2counter-turbo
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - { key: VITE_MODE, value: turbo }
+      - { key: VITE_OTHER_URL, value: https://d2counter.lder.fyi }
+    headers:
+      - { path: /data/*, name: Cache-Control, value: "public, max-age=300" }
+      - { path: /sw.js, name: Cache-Control, value: "no-cache" }
+      - { path: /heroes/*, name: Cache-Control, value: "public, max-age=604800" }
+    routes:
+      - { type: rewrite, source: /*, destination: /index.html }
