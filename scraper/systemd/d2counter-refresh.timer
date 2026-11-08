@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh Dota 2 counter picker data every 12h
+
+[Timer]
+OnCalendar=*-*-* 00,12:15:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

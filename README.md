@@ -13,7 +13,7 @@ Two sites are built from this repo:
 
 ## How it works
 - `scraper/scrape.py` scrapes Dotabuff (via `curl_cffi` to pass Cloudflare) into `web/public/data/matchups.json` + hero images in `web/public/heroes/`.
-- A GitHub Action (`.github/workflows/scrape.yml`) runs it every 12h and commits changes; Render redeploys both static sites on push. No backend, no cold starts.
+- Dotabuff's Cloudflare returns 403 to datacenter IPs (GitHub Actions included), so the scrape runs on a home machine: `scraper/refresh.sh` scrapes, commits and pushes; a systemd user timer (`scraper/systemd/`) runs it every 12h. Render redeploys both static sites on push. No backend, no cold starts.
 - `web/` is a Vite + React + TypeScript app; all ranking is computed client-side from the JSON.
 
 ## Develop
@@ -22,6 +22,13 @@ pip install -r scraper/requirements.txt && python scraper/scrape.py   # refresh 
 cd web && npm install && VITE_MODE=turbo npm run dev
 npm test
 ```
+
+## Scheduled refresh (systemd user timer)
+```sh
+mkdir -p ~/.config/systemd/user && cp scraper/systemd/* ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now d2counter-refresh.timer
+```
+Revert: `systemctl --user disable --now d2counter-refresh.timer`.
 
 ## Deploy
 `render.yaml` defines both static sites. Custom domains: add `d2counter.lder.fyi` / `turbo.d2counter.lder.fyi` in each Render service and point DNS-only CNAMEs (Cloudflare grey cloud) to the `*.onrender.com` hostnames.

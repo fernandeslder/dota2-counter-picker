@@ -1,0 +1,6 @@
+[Unit]
+Description=Refresh Dota 2 counter picker data from Dotabuff
+
+[Service]
+Type=oneshot
+ExecStart=%h/orca/dota2-counter-picker/scraper/refresh.sh
